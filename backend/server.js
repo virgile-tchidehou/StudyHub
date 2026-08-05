@@ -51,6 +51,10 @@ app.get('/health', async (_req, res) => {
   }
 });
 
+app.get('/', (_req, res) => {
+  res.json({ service: 'studyhub-backend', status: 'ok', docs: '/health' });
+});
+
 export default app;
 
 // Start the server if executing directly
