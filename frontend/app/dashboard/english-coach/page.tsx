@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLanguage } from "@/lib/language";
 import { flashcardsApi, aiApi, chatMessagesApi, Flashcard } from "@/lib/api";
+import Image from "next/image";
 import {
   MessageSquare,
   Sparkles,

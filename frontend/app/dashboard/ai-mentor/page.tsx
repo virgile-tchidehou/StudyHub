@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useLanguage } from "@/lib/language";
 import { aiApi } from "@/lib/api";
+import Image from "next/image";
 import { Bot, Sparkles, Send, ShieldCheck, GraduationCap, Video, HelpCircle, FileCheck, RefreshCw, Zap } from "lucide-react";
 
 export default function AiMentorPage() {
@@ -53,12 +54,15 @@ export default function AiMentorPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 bg-white p-6 rounded-2xl shadow-xs">
-        <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-50 text-purple-700 text-xs font-semibold uppercase tracking-wider mb-2">
-            <Bot className="w-3.5 h-3.5" /> Module 5 — AI Mentor & Jury Virtuel
+        <div className="flex items-center gap-4">
+          <Image src="/logo.png" alt="StudyHub" width={48} height={48} priority />
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-50 text-purple-700 text-xs font-semibold uppercase tracking-wider mb-2">
+              <Bot className="w-3.5 h-3.5" /> Module 5 — AI Mentor & Jury Virtuel
+            </div>
+            <h1 className="text-2xl font-extrabold text-slate-900">{t.aiMentor}</h1>
+            <p className="text-slate-600 text-sm mt-1">{t.aiMentorDesc}</p>
           </div>
-          <h1 className="text-2xl font-extrabold text-slate-900">{t.aiMentor}</h1>
-          <p className="text-slate-600 text-sm mt-1">{t.aiMentorDesc}</p>
         </div>
 
         {/* AI Provider Switcher */}

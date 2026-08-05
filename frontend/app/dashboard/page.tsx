@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useLanguage } from "@/lib/language";
 import { goalsApi, universitiesApi, documentsApi, scholarshipsApi, Goal, University, DocumentItem, Scholarship } from "@/lib/api";
 import {
@@ -76,24 +77,11 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Welcome strip */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 rounded-2xl text-white shadow-md">
+      <div className="flex items-center gap-4">
+        <Image src="/logo.png" alt="StudyHub" width={64} height={64} priority />
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-semibold uppercase tracking-wider border border-blue-400/30 mb-2">
-            <Sparkles className="w-3.5 h-3.5" /> Espace Unifié Candidatures & Bourses
-          </div>
           <h1 className="text-2xl font-extrabold">{t.welcomeBack}</h1>
-          <p className="text-sm text-slate-300 mt-1 max-w-2xl">{t.pickModule}</p>
-        </div>
-
-        <div className="flex items-center gap-4 bg-white/10 p-4 rounded-xl backdrop-blur-md border border-white/10 shrink-0">
-          <div>
-            <span className="text-[10px] text-indigo-200 font-bold uppercase block tracking-wider">Score de Préparation</span>
-            <span className="text-3xl font-black text-white">{readinessScore}%</span>
-          </div>
-          <div className="w-12 h-12 rounded-full border-4 border-blue-500 flex items-center justify-center font-bold text-xs bg-slate-900">
-            <TrendingUp className="w-6 h-6 text-blue-400" />
-          </div>
+          <p className="text-sm text-slate-500 mt-1 max-w-2xl">{t.pickModule}</p>
         </div>
       </div>
 

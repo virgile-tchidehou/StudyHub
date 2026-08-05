@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useLanguage } from "@/lib/language";
 import { plannerApi, PlannerTask } from "@/lib/api";
+import Image from "next/image";
 import { Calendar, CheckCircle2, Circle, Clock, Plus, Tag, Flame, AlertCircle, Trash2 } from "lucide-react";
 
 export default function PlannerPage() {
@@ -76,12 +77,15 @@ export default function PlannerPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 bg-white p-6 rounded-2xl shadow-xs">
-        <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 text-amber-800 text-xs font-semibold uppercase tracking-wider mb-2">
-            <Calendar className="w-3.5 h-3.5" /> Module 8 — Planning & Compte à Rebours
+        <div className="flex items-center gap-4">
+          <Image src="/logo.png" alt="StudyHub" width={48} height={48} priority />
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 text-amber-800 text-xs font-semibold uppercase tracking-wider mb-2">
+              <Calendar className="w-3.5 h-3.5" /> Module 8 — Planning & Compte à Rebours
+            </div>
+            <h1 className="text-2xl font-extrabold text-slate-900">{t.planner}</h1>
+            <p className="text-slate-600 text-sm mt-1">{t.plannerDesc}</p>
           </div>
-          <h1 className="text-2xl font-extrabold text-slate-900">{t.planner}</h1>
-          <p className="text-slate-600 text-sm mt-1">{t.plannerDesc}</p>
         </div>
         <div className="flex items-center gap-3 bg-slate-900 text-white px-4 py-2.5 rounded-xl text-xs font-semibold shrink-0">
           <Flame className="w-4 h-4 text-amber-400" />

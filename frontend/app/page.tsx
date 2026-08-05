@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useLanguage } from "@/lib/language";
+import Image from "next/image";
 import {
   Target,
   GraduationCap,
@@ -66,6 +67,8 @@ export default function HomePage() {
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-semibold uppercase tracking-wider border border-blue-400/30 mb-6">
             <Sparkles className="w-3.5 h-3.5" /> StudyHub International
           </div>
+
+          <Image src="/logo.png" alt="StudyHub" width={120} height={120} className="mx-auto mb-6" priority />
 
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-tight text-white">
             Votre espace d&apos;accompagnement

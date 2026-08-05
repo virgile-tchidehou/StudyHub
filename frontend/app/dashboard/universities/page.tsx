@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { universitiesApi, type University } from "@/lib/api";
 import { useLanguage } from "@/lib/language";
+import Image from "next/image";
 import { Plus, MapPin, Trophy, X, ExternalLink, Clock, AlertCircle, GraduationCap, CheckCircle2, Globe, FileCheck } from "lucide-react";
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
@@ -94,12 +95,15 @@ export default function UniversitiesPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 bg-white p-6 rounded-2xl shadow-xs">
-        <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-50 text-purple-700 text-xs font-semibold uppercase tracking-wider mb-2">
-            <GraduationCap className="w-3.5 h-3.5" /> Module 2 — Universités Cibles
+        <div className="flex items-center gap-4">
+          <Image src="/logo.png" alt="StudyHub" width={48} height={48} priority />
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-50 text-purple-700 text-xs font-semibold uppercase tracking-wider mb-2">
+              <GraduationCap className="w-3.5 h-3.5" /> Module 2 — Universités Cibles
+            </div>
+            <h1 className="text-2xl font-extrabold text-slate-900">{t.universitiesTitle}</h1>
+            <p className="text-sm text-slate-500 mt-1">{t.universitiesIntro}</p>
           </div>
-          <h1 className="text-2xl font-extrabold text-slate-900">{t.universitiesTitle}</h1>
-          <p className="text-sm text-slate-500 mt-1">{t.universitiesIntro}</p>
         </div>
         {unis.length > 0 && (
           <div className="text-right bg-purple-50 p-3 rounded-xl border border-purple-100 shrink-0">

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useLanguage } from "@/lib/language";
 import { goalsApi, universitiesApi, documentsApi, scholarshipsApi, Goal, University, DocumentItem, Scholarship } from "@/lib/api";
+import Image from "next/image";
 import { BarChart3, CheckCircle, Clock, GraduationCap, Award, FileText, Target, TrendingUp, Sparkles, ShieldCheck } from "lucide-react";
 
 export default function AnalyticsPage() {
@@ -45,12 +46,15 @@ export default function AnalyticsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 bg-white p-6 rounded-2xl shadow-xs">
-        <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 text-white text-xs font-semibold uppercase tracking-wider mb-2">
-            <BarChart3 className="w-3.5 h-3.5 text-emerald-400" /> Module 9 — Analytics & Readiness
+        <div className="flex items-center gap-4">
+          <Image src="/logo.png" alt="StudyHub" width={48} height={48} priority />
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 text-white text-xs font-semibold uppercase tracking-wider mb-2">
+              <BarChart3 className="w-3.5 h-3.5 text-emerald-400" /> Module 9 — Analytics & Readiness
+            </div>
+            <h1 className="text-2xl font-extrabold text-slate-900">{t.analytics}</h1>
+            <p className="text-slate-600 text-sm mt-1">{t.analyticsDesc}</p>
           </div>
-          <h1 className="text-2xl font-extrabold text-slate-900">{t.analytics}</h1>
-          <p className="text-slate-600 text-sm mt-1">{t.analyticsDesc}</p>
         </div>
         <div className="flex items-center gap-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 rounded-2xl shadow-xs shrink-0">
           <div>

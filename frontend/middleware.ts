@@ -3,15 +3,16 @@ import type { NextRequest } from "next/server";
 
 const publicRoutes = ["/", "/login"];
 const apiAuthRoutes = ["/api/auth"];
+const publicAssets = ["/favicon.ico", "/logo.png"];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (
     publicRoutes.includes(pathname) ||
-    pathname.startsWith("/api/auth") ||
+    apiAuthRoutes.includes(pathname) ||
     pathname.startsWith("/_next") ||
-    pathname === "/favicon.ico"
+    publicAssets.includes(pathname)
   ) {
     return NextResponse.next();
   }

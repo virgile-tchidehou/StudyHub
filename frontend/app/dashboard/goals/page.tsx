@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { goalsApi, type Goal } from "@/lib/api";
 import { useLanguage } from "@/lib/language";
+import Image from "next/image";
 import { Clock, CheckCircle2, Plus, Trash2, Target, Calendar, Filter, Edit3, X, Sparkles } from "lucide-react";
 
 export default function GoalsPage() {
@@ -105,12 +106,15 @@ export default function GoalsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 bg-white p-6 rounded-2xl shadow-xs">
-        <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold uppercase tracking-wider mb-2">
-            <Target className="w-3.5 h-3.5" /> Module 1 — Goal Tracker
+        <div className="flex items-center gap-4">
+          <Image src="/logo.png" alt="StudyHub" width={48} height={48} priority />
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold uppercase tracking-wider mb-2">
+              <Target className="w-3.5 h-3.5" /> Module 1 — Goal Tracker
+            </div>
+            <h1 className="text-2xl font-extrabold text-slate-900">{t.goalTracker}</h1>
+            <p className="text-sm text-slate-500 mt-1">{t.goalsIntro}</p>
           </div>
-          <h1 className="text-2xl font-extrabold text-slate-900">{t.goalTracker}</h1>
-          <p className="text-sm text-slate-500 mt-1">{t.goalsIntro}</p>
         </div>
         {goals.length > 0 && (
           <div className="text-right bg-blue-50 p-3 rounded-xl border border-blue-100 shrink-0">

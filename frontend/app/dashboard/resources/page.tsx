@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useLanguage } from "@/lib/language";
 import { resourcesApi, ResourceItem } from "@/lib/api";
+import Image from "next/image";
 import { BookOpen, Search, ExternalLink, Tag, Bookmark, Download, Video, FileText, Plus, X } from "lucide-react";
 
 export default function ResourcesPage() {
@@ -72,12 +73,15 @@ export default function ResourcesPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 bg-white p-6 rounded-2xl shadow-xs">
-        <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-semibold uppercase tracking-wider mb-2">
-            <BookOpen className="w-3.5 h-3.5" /> Module 7 — Bibliothèque & Ressources
+        <div className="flex items-center gap-4">
+          <Image src="/logo.png" alt="StudyHub" width={48} height={48} priority />
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-semibold uppercase tracking-wider mb-2">
+              <BookOpen className="w-3.5 h-3.5" /> Module 7 — Bibliothèque & Ressources
+            </div>
+            <h1 className="text-2xl font-extrabold text-slate-900">{t.resources}</h1>
+            <p className="text-slate-600 text-sm mt-1">{t.resourcesDesc}</p>
           </div>
-          <h1 className="text-2xl font-extrabold text-slate-900">{t.resources}</h1>
-          <p className="text-slate-600 text-sm mt-1">{t.resourcesDesc}</p>
         </div>
         <button
           onClick={() => setShowModal(true)}

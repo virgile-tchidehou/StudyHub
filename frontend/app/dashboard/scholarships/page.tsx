@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useLanguage } from "@/lib/language";
 import { scholarshipsApi, Scholarship } from "@/lib/api";
+import Image from "next/image";
 import { Award, Search, Plus, ExternalLink, Calendar, DollarSign, Globe, Bookmark, Sparkles, RefreshCw, CheckCircle2, Zap } from "lucide-react";
 
 export default function ScholarshipsPage() {
@@ -122,12 +123,15 @@ export default function ScholarshipsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 bg-white p-6 rounded-2xl shadow-xs">
-        <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold uppercase tracking-wider mb-2">
-            <Award className="w-3.5 h-3.5" /> Module 2 — Financement & Bourses
+        <div className="flex items-center gap-4">
+          <Image src="/logo.png" alt="StudyHub" width={48} height={48} priority />
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold uppercase tracking-wider mb-2">
+              <Award className="w-3.5 h-3.5" /> Module 2 — Financement & Bourses
+            </div>
+            <h1 className="text-2xl font-extrabold text-slate-900">{t.scholarships}</h1>
+            <p className="text-slate-600 text-sm mt-1">{t.scholarshipsDesc}</p>
           </div>
-          <h1 className="text-2xl font-extrabold text-slate-900">{t.scholarships}</h1>
-          <p className="text-slate-600 text-sm mt-1">{t.scholarshipsDesc}</p>
         </div>
         <button
           onClick={() => setShowModal(true)}

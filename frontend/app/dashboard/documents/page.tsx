@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { documentsApi, type DocumentItem } from "@/lib/api";
 import { useLanguage } from "@/lib/language";
-import { Plus, FolderOpen, Trash2, Edit2, X, FileText, Image, File, FileQuestion, Filter, Search, Clock, CheckCircle2, AlertCircle, Pencil, Download, Copy, Sparkles } from "lucide-react";
+import Image from "next/image";
+import { Plus, FolderOpen, Trash2, Edit2, X, FileText, Image as LucideImage, File, FileQuestion, Filter, Search, Clock, CheckCircle2, AlertCircle, Pencil, Download, Copy, Sparkles } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-gray-100 text-gray-600",
@@ -19,7 +20,7 @@ const STATUS_ICONS: Record<string, React.ReactNode> = {
 
 const TYPE_ICONS: Record<string, React.ReactNode> = {
   pdf: <FileText className="w-4 h-4 text-red-500" />,
-  image: <Image className="w-4 h-4 text-blue-500" />,
+  image: <LucideImage className="w-4 h-4 text-blue-500" />,
   doc: <File className="w-4 h-4 text-blue-600" />,
   other: <FileQuestion className="w-4 h-4 text-slate-400" />,
 };
@@ -150,12 +151,15 @@ export default function DocumentsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 bg-white p-6 rounded-2xl shadow-xs">
-        <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold uppercase tracking-wider mb-2">
-            <FileText className="w-3.5 h-3.5" /> Module 3 — Gestionnaire de Documents
+        <div className="flex items-center gap-4">
+          <Image src="/logo.png" alt="StudyHub" width={48} height={48} priority />
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold uppercase tracking-wider mb-2">
+              <FileText className="w-3.5 h-3.5" /> Module 3 — Gestionnaire de Documents
+            </div>
+            <h1 className="text-2xl font-extrabold text-slate-900">{t.documentsTitle}</h1>
+            <p className="text-sm text-slate-500 mt-1">{t.documentsIntro}</p>
           </div>
-          <h1 className="text-2xl font-extrabold text-slate-900">{t.documentsTitle}</h1>
-          <p className="text-sm text-slate-500 mt-1">{t.documentsIntro}</p>
         </div>
       </div>
 
