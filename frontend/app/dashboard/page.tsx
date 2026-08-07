@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useLanguage } from "@/lib/language";
-import { goalsApi, universitiesApi, documentsApi, scholarshipsApi, Goal, University, DocumentItem, Scholarship } from "@/lib/api";
+import { goalsApi, universitiesApi, documentsApi, scholarshipsApi, aiApi, Goal, University, DocumentItem, Scholarship, AIDailyPlan } from "@/lib/api";
 import {
   Target,
   GraduationCap,
@@ -14,13 +14,10 @@ import {
   ArrowRight,
   Clock,
   CheckCircle2,
-  Plus,
   FolderOpen,
   Zap,
-  TrendingUp,
   AlertCircle,
-  Calendar,
-  BookOpen,
+  XCircle,
 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -29,19 +26,41 @@ export default function DashboardPage() {
   const [unis, setUnis] = useState<University[]>([]);
   const [docs, setDocs] = useState<DocumentItem[]>([]);
   const [scholarships, setScholarships] = useState<Scholarship[]>([]);
+  const [dailyPlan, setDailyPlan] = useState<AIDailyPlan | null>(null);
+  const [updatingActionKey, setUpdatingActionKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([goalsApi.list(), universitiesApi.list(), documentsApi.list(), scholarshipsApi.list()])
-      .then(([g, u, d, s]) => {
+    Promise.all([goalsApi.list(), universitiesApi.list(), documentsApi.list(), scholarshipsApi.list(), aiApi.dailyPlan()])
+      .then(([g, u, d, s, plan]) => {
         setGoals(g || []);
         setUnis(u || []);
         setDocs(d || []);
         setScholarships(s || []);
+        setDailyPlan(plan || null);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  const markDailyPlanAction = async (action: AIDailyPlan["actions"][number], status: "completed" | "dismissed") => {
+    if (updatingActionKey) return;
+    setUpdatingActionKey(action.actionKey);
+    try {
+      await aiApi.updateDailyPlanAction({
+        actionKey: action.actionKey,
+        actionTitle: action.title,
+        category: action.category,
+        status,
+      });
+      const refreshed = await aiApi.dailyPlan();
+      setDailyPlan(refreshed);
+    } catch {
+      // keep silent in dashboard for now
+    } finally {
+      setUpdatingActionKey(null);
+    }
+  };
 
   const completedGoals = goals.filter((g) => g.completed).length;
   const approvedDocs = docs.filter((d) => d.status === "approved").length;
@@ -77,20 +96,39 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Image src="/logo.png" alt="StudyHub" width={64} height={64} priority />
-        <div>
-          <h1 className="text-2xl font-extrabold">{t.welcomeBack}</h1>
-          <p className="text-sm text-slate-500 mt-1 max-w-2xl">{t.pickModule}</p>
+      <section className="relative overflow-hidden rounded-3xl border border-indigo-100 bg-gradient-to-r from-indigo-600 via-violet-600 to-sky-600 text-white p-6 sm:p-8 shadow-lg shadow-indigo-500/20">
+        <div className="absolute -top-16 -right-14 h-56 w-56 rounded-full bg-white/15 blur-2xl" />
+        <div className="absolute -bottom-16 -left-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
+        <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+          <div className="flex items-center gap-4">
+            <div className="rounded-2xl bg-white/15 p-2.5 backdrop-blur-sm border border-white/20">
+              <Image src="/logo.png" alt="StudyHub" width={52} height={52} priority />
+            </div>
+            <div>
+              <h1 className="text-2xl font-extrabold tracking-tight">{t.welcomeBack}</h1>
+              <p className="text-sm text-indigo-100 mt-1 max-w-2xl">{t.pickModule}</p>
+            </div>
+          </div>
+
+          <div className="w-full lg:w-[340px] rounded-2xl border border-white/20 bg-white/10 backdrop-blur-sm p-4">
+            <div className="flex items-center justify-between text-xs mb-2">
+              <span className="font-semibold text-indigo-100">Dossier readiness</span>
+              <span className="font-bold text-white">{readinessScore}%</span>
+            </div>
+            <div className="h-2 w-full rounded-full bg-white/30 overflow-hidden">
+              <div className="h-full bg-white rounded-full transition-all duration-500" style={{ width: `${readinessScore}%` }} />
+            </div>
+            <p className="mt-2 text-[11px] text-indigo-100">Suivi global de votre progression (objectifs, documents, universités, bourses).</p>
+          </div>
         </div>
-      </div>
+      </section>
 
       {/* Stats row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {stats.map((s) => {
           const Icon = s.icon;
           return (
-            <div key={s.label} className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-3 shadow-xs hover:border-blue-300 transition">
+            <div key={s.label} className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 p-4 flex items-center gap-3 shadow-sm hover:border-indigo-300 transition">
               <div className={`shrink-0 w-10 h-10 rounded-xl ${s.bg} flex items-center justify-center`}>
                 <Icon className={`w-5 h-5 ${s.color}`} />
               </div>
@@ -117,10 +155,70 @@ export default function DashboardPage() {
         </Link>
       </div>
 
+      {/* AI Daily Plan */}
+      {dailyPlan && (
+        <section className="bg-white/90 rounded-2xl border border-slate-200 p-5 shadow-sm backdrop-blur-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+            <div>
+              <h2 className="font-bold text-slate-900 flex items-center gap-2 text-sm">
+                <Zap className="w-4 h-4 text-purple-600" /> Plan quotidien IA
+              </h2>
+              <p className="text-xs text-slate-500 mt-1">{dailyPlan.summary}</p>
+            </div>
+            <Link href="/dashboard/ai-mentor" className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
+              Ouvrir le Mentor <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-4 text-[11px]">
+            <div className="rounded-lg border border-slate-100 bg-slate-50 p-2"><b>{dailyPlan.progressSummary.activeGoals}</b> objectifs actifs</div>
+            <div className="rounded-lg border border-slate-100 bg-slate-50 p-2"><b>{dailyPlan.progressSummary.pendingTasks}</b> tâches à venir</div>
+            <div className="rounded-lg border border-slate-100 bg-emerald-50 p-2"><b>{dailyPlan.tracking.completedToday}</b> actions complétées</div>
+            <div className="rounded-lg border border-slate-100 bg-amber-50 p-2"><b>{dailyPlan.tracking.dismissedToday}</b> actions ignorées</div>
+          </div>
+
+          <ul className="space-y-2">
+            {dailyPlan.actions.map((action) => {
+              const isBusy = updatingActionKey === action.actionKey;
+              return (
+                <li key={action.actionKey} className="rounded-xl border border-slate-100 bg-slate-50/60 p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-800">{action.title}</p>
+                      <p className="text-xs text-slate-500 mt-1">{action.detail}</p>
+                      <p className="text-[10px] uppercase tracking-wider text-purple-600 mt-1">{action.etaMinutes} min • {action.category}</p>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${action.state === "completed" ? "bg-emerald-100 text-emerald-700" : action.state === "dismissed" ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600"}`}>
+                      {action.state === "completed" ? "complétée" : action.state === "dismissed" ? "ignorée" : "à faire"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-2">
+                    <button
+                      disabled={isBusy}
+                      onClick={() => markDailyPlanAction(action, "completed")}
+                      className="text-xs px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-60 flex items-center gap-1"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Fait
+                    </button>
+                    <button
+                      disabled={isBusy}
+                      onClick={() => markDailyPlanAction(action, "dismissed")}
+                      className="text-xs px-2.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white disabled:opacity-60 flex items-center gap-1"
+                    >
+                      <XCircle className="w-3.5 h-3.5" /> Ignorer
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+
       {/* Quick sections — compact cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Goals */}
-        <section className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
+        <section className="bg-white/90 rounded-2xl border border-slate-200 p-5 shadow-sm backdrop-blur-sm">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-bold text-slate-900 flex items-center gap-2 text-sm">
               <Target className="w-4 h-4 text-blue-600" /> {t.goalTracker}
@@ -147,7 +245,7 @@ export default function DashboardPage() {
         </section>
 
         {/* Universities */}
-        <section className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
+        <section className="bg-white/90 rounded-2xl border border-slate-200 p-5 shadow-sm backdrop-blur-sm">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-bold text-slate-900 flex items-center gap-2 text-sm">
               <GraduationCap className="w-4 h-4 text-purple-600" /> {t.universitiesTitle}
@@ -176,7 +274,7 @@ export default function DashboardPage() {
         </section>
 
         {/* Documents */}
-        <section className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
+        <section className="bg-white/90 rounded-2xl border border-slate-200 p-5 shadow-sm backdrop-blur-sm">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-bold text-slate-900 flex items-center gap-2 text-sm">
               <FileText className="w-4 h-4 text-emerald-600" /> {t.documentsTitle}
@@ -205,7 +303,7 @@ export default function DashboardPage() {
         </section>
 
         {/* Scholarships */}
-        <section className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
+        <section className="bg-white/90 rounded-2xl border border-slate-200 p-5 shadow-sm backdrop-blur-sm">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-bold text-slate-900 flex items-center gap-2 text-sm">
               <Award className="w-4 h-4 text-amber-700" /> {t.scholarships}

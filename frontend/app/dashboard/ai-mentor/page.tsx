@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLanguage } from "@/lib/language";
-import { aiApi, chatMessagesApi, profileApi, StudyProfile, AIHistoryMessage, AIMode } from "@/lib/api";
+import { aiApi, chatMessagesApi, profileApi, StudyProfile, AIHistoryMessage, AIMode, AIRecommendation, AIDailyPlan } from "@/lib/api";
 import Image from "next/image";
-import { Bot, Send, ShieldCheck, Video, RefreshCw, Zap, UserRound, BrainCircuit, Target } from "lucide-react";
+import { Bot, Send, ShieldCheck, RefreshCw, Zap, UserRound, BrainCircuit } from "lucide-react";
 
 type Mode = "interview" | "general" | "technical_mentor";
 type Message = { sender: "user" | "ai"; text: string; provider?: string };
@@ -38,8 +38,36 @@ export default function AiMentorPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [history, setHistory] = useState<AIHistoryMessage[]>([]);
   const [profile, setProfile] = useState<StudyProfile | null>(null);
+  const [recommendation, setRecommendation] = useState<AIRecommendation | null>(null);
+  const [dailyPlan, setDailyPlan] = useState<AIDailyPlan | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingContext, setLoadingContext] = useState(true);
+  const [loadingRecommendation, setLoadingRecommendation] = useState(false);
+  const [loadingDailyPlan, setLoadingDailyPlan] = useState(false);
+
+  const loadRecommendation = useCallback(async (mode: Mode = activeMode) => {
+    setLoadingRecommendation(true);
+    try {
+      const res = await aiApi.recommendations(mode as AIMode);
+      setRecommendation(res);
+    } catch {
+      setRecommendation(null);
+    } finally {
+      setLoadingRecommendation(false);
+    }
+  }, [activeMode]);
+
+  const loadDailyPlan = useCallback(async (mode: Mode = activeMode) => {
+    setLoadingDailyPlan(true);
+    try {
+      const res = await aiApi.dailyPlan(mode as AIMode);
+      setDailyPlan(res);
+    } catch {
+      setDailyPlan(null);
+    } finally {
+      setLoadingDailyPlan(false);
+    }
+  }, [activeMode]);
 
   useEffect(() => {
     Promise.all([
@@ -67,6 +95,11 @@ export default function AiMentorPage() {
     });
   }, []);
 
+  useEffect(() => {
+    loadRecommendation(activeMode);
+    loadDailyPlan(activeMode);
+  }, [activeMode, loadRecommendation, loadDailyPlan]);
+
   const saveMessage = async (message: Message) => {
     try {
       await chatMessagesApi.create({ mode: activeMode, sender: message.sender, text: message.text, provider: message.provider });
@@ -78,7 +111,7 @@ export default function AiMentorPage() {
     if (!text || loading) return;
 
     const userMessage: Message = { sender: "user", text };
-    const nextHistory = [...history, { role: "user" as const, content: text }].slice(-12);
+    const nextHistory: AIHistoryMessage[] = [...history, { role: "user" as const, content: text }].slice(-12);
     setMessages((prev) => [...prev, userMessage]);
     setHistory(nextHistory);
     if (!customText) setPrompt("");
@@ -89,7 +122,8 @@ export default function AiMentorPage() {
       const res = await aiApi.ask(text, activeMode as AIMode, aiProvider, nextHistory);
       const aiMessage: Message = { sender: "ai", text: res.text, provider: res.provider };
       setMessages((prev) => [...prev, aiMessage]);
-      setHistory([...nextHistory, { role: "assistant", content: res.text }].slice(-12));
+      const assistantMessage: AIHistoryMessage = { role: "assistant", content: res.text };
+      setHistory([...nextHistory, assistantMessage].slice(-12));
       await saveMessage(aiMessage);
     } catch {
       const fallback: Message = {
@@ -106,24 +140,26 @@ export default function AiMentorPage() {
 
   return (
     <div className="space-y-6">
-      <div className="border-b border-slate-200 bg-white p-6 rounded-2xl shadow-xs">
+      <div className="rounded-3xl border border-violet-100 bg-gradient-to-r from-indigo-600 via-violet-600 to-sky-600 p-6 shadow-lg shadow-indigo-500/20 text-white">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex items-center gap-4">
-            <Image src="/logo.png" alt="StudyHub" width={48} height={48} priority />
+            <div className="rounded-2xl bg-white/15 p-2.5 border border-white/20 backdrop-blur-sm">
+              <Image src="/logo.png" alt="StudyHub" width={40} height={40} priority />
+            </div>
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-50 text-purple-700 text-xs font-semibold uppercase tracking-wider mb-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-white text-xs font-semibold uppercase tracking-wider mb-2 border border-white/20">
                 <Bot className="w-3.5 h-3.5" /> AI Mentor
               </div>
-              <h1 className="text-2xl font-extrabold text-slate-900">{t.aiMentor}</h1>
-              <p className="text-slate-600 text-sm mt-1">{info.description}</p>
+              <h1 className="text-2xl font-extrabold">{t.aiMentor}</h1>
+              <p className="text-indigo-100 text-sm mt-1">{info.description}</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl text-xs font-semibold text-slate-700 shrink-0">
-            <Zap className="w-4 h-4 text-purple-600 ml-1" />
+          <div className="flex items-center gap-2 bg-white/15 border border-white/20 p-1.5 rounded-xl text-xs font-semibold text-white shrink-0">
+            <Zap className="w-4 h-4 text-white ml-1" />
             <span>Moteur :</span>
             {(["auto", "gemini", "groq"] as const).map((provider) => (
-              <button key={provider} onClick={() => setAiProvider(provider)} className={`px-2.5 py-1 rounded-lg transition ${aiProvider === provider ? "bg-white text-purple-700 shadow-xs" : "hover:text-slate-900"}`}>
+              <button key={provider} onClick={() => setAiProvider(provider)} className={`px-2.5 py-1 rounded-lg transition ${aiProvider === provider ? "bg-white text-indigo-700 shadow-xs" : "text-indigo-100 hover:text-white hover:bg-white/10"}`}>
                 {provider === "auto" ? "Auto" : provider === "gemini" ? "Gemini" : "Groq"}
               </button>
             ))}
@@ -132,17 +168,17 @@ export default function AiMentorPage() {
 
         <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-2">
           {(Object.keys(MODE_INFO) as Mode[]).map((mode) => (
-            <button key={mode} onClick={() => setActiveMode(mode)} className={`text-left p-3 rounded-xl border transition ${activeMode === mode ? "border-purple-300 bg-purple-50" : "border-slate-200 bg-slate-50 hover:bg-white"}`}>
+            <button key={mode} onClick={() => setActiveMode(mode)} className={`text-left p-3 rounded-xl border transition ${activeMode === mode ? "border-white/60 bg-white/25" : "border-white/20 bg-white/10 hover:bg-white/15"}`}>
               <div className="text-lg">{MODE_INFO[mode].icon}</div>
-              <div className="text-xs font-bold text-slate-900 mt-1">{MODE_INFO[mode].label}</div>
-              <div className="text-[11px] text-slate-500 mt-1">{MODE_INFO[mode].description}</div>
+              <div className="text-xs font-bold text-white mt-1">{MODE_INFO[mode].label}</div>
+              <div className="text-[11px] text-indigo-100 mt-1">{MODE_INFO[mode].description}</div>
             </button>
           ))}
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-xs flex flex-col h-[590px]">
+        <div className="lg:col-span-2 bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 shadow-sm flex flex-col h-[590px]">
           <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50 rounded-t-2xl">
             <div className="flex items-center gap-2">
               <div className="w-2.5 h-2.5 rounded-full bg-purple-600 animate-pulse" />
@@ -166,7 +202,7 @@ export default function AiMentorPage() {
             {loading && <div className="flex justify-start"><div className="bg-slate-100 p-3 rounded-2xl text-xs text-slate-500 flex items-center gap-2"><RefreshCw className="w-3.5 h-3.5 animate-spin text-purple-600" />Le Mentor IA réfléchit...</div></div>}
           </div>
 
-          <div className="p-4 border-t border-slate-100 bg-slate-50/50 rounded-b-2xl">
+          <div className="p-4 border-t border-slate-100 bg-slate-50/70 rounded-b-2xl">
             <div className="flex gap-2">
               <input value={prompt} onChange={(e) => setPrompt(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSend()} placeholder={activeMode === "interview" ? "Répondez au jury..." : "Posez votre question..."} className="flex-1 px-4 py-2.5 text-xs sm:text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white" />
               <button onClick={() => handleSend()} disabled={loading || !prompt.trim()} className="px-4 py-2.5 bg-purple-700 hover:bg-purple-800 disabled:opacity-50 text-white font-semibold text-xs rounded-xl transition"><Send className="w-4 h-4" /></button>
@@ -175,7 +211,7 @@ export default function AiMentorPage() {
         </div>
 
         <div className="space-y-4">
-          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
+          <div className="bg-white/90 rounded-2xl border border-slate-200 p-5 shadow-sm backdrop-blur-sm">
             <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2 mb-3"><UserRound className="w-4 h-4 text-purple-600" /> Contexte utilisé</h3>
             {profile ? (
               <div className="space-y-2 text-xs text-slate-600">
@@ -188,12 +224,49 @@ export default function AiMentorPage() {
             ) : <p className="text-xs text-slate-500">Complétez votre profil pour personnaliser davantage le Mentor.</p>}
           </div>
 
-          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
-            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2 mb-3"><Target className="w-4 h-4 text-purple-600" /> Démarrer rapidement</h3>
-            <div className="space-y-2">
-              <button onClick={() => handleSend("Commence une simulation d'entretien. Pose-moi la première question et attends ma réponse.")} className="w-full text-left p-3 rounded-xl border border-slate-100 bg-slate-50 hover:bg-purple-50 text-xs font-semibold text-slate-700">🎤 Lancer un entretien</button>
-              <button onClick={() => { setActiveMode("technical_mentor"); handleSend("Évalue mes connaissances actuelles en systèmes embarqués et propose-moi un premier exercice pratique."); }} className="w-full text-left p-3 rounded-xl border border-slate-100 bg-slate-50 hover:bg-purple-50 text-xs font-semibold text-slate-700">⚙️ Évaluer mon niveau technique</button>
-              <button onClick={() => { setActiveMode("general"); handleSend("Analyse mon projet d'études et donne-moi les trois prochaines actions les plus importantes."); }} className="w-full text-left p-3 rounded-xl border border-slate-100 bg-slate-50 hover:bg-purple-50 text-xs font-semibold text-slate-700">🎓 Construire mes prochaines étapes</button>
+          <div className="bg-white/90 rounded-2xl border border-slate-200 p-5 shadow-sm backdrop-blur-sm">
+            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2 mb-3"><BrainCircuit className="w-4 h-4 text-purple-600" /> Plan du jour IA</h3>
+            {loadingDailyPlan ? (
+              <p className="text-xs text-slate-500">Génération du plan quotidien…</p>
+            ) : dailyPlan ? (
+              <div className="space-y-3">
+                <p className="text-sm font-semibold text-slate-800">{dailyPlan.summary}</p>
+                <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600">
+                  <div className="rounded-lg border border-slate-100 bg-slate-50 p-2">
+                    <div className="font-semibold text-slate-800">Objectifs actifs</div>
+                    <div>{dailyPlan.progressSummary.activeGoals}</div>
+                  </div>
+                  <div className="rounded-lg border border-slate-100 bg-slate-50 p-2">
+                    <div className="font-semibold text-slate-800">Tâches à venir</div>
+                    <div>{dailyPlan.progressSummary.pendingTasks}</div>
+                  </div>
+                </div>
+                <ul className="space-y-2 text-xs text-slate-600">
+                  {dailyPlan.actions.map((action, idx) => (
+                    <li key={`${action.title}-${idx}`} className="rounded-lg border border-slate-100 bg-slate-50 p-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="font-semibold text-slate-800">{action.title}</div>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${action.state === "completed" ? "bg-emerald-100 text-emerald-700" : action.state === "dismissed" ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600"}`}>
+                          {action.state === "completed" ? "fait" : action.state === "dismissed" ? "ignoré" : "à faire"}
+                        </span>
+                      </div>
+                      <div className="mt-1 text-[11px] text-slate-500">{action.detail}</div>
+                      <div className="mt-1 text-[10px] uppercase tracking-wider text-purple-600">{action.etaMinutes} min</div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <p className="text-xs text-slate-500">Le plan quotidien apparaîtra ici dès que votre profil et vos tâches seront assez renseignés.</p>
+            )}
+          </div>
+
+          <div className="bg-white/90 rounded-2xl border border-slate-200 p-5 shadow-sm backdrop-blur-sm">
+            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3">Actions rapides</h3>
+            <div className="grid grid-cols-1 gap-2">
+              <button onClick={() => handleSend("Commence une simulation d'entretien. Pose-moi la première question puis attends ma réponse.")} className="text-left rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-indigo-50 hover:border-indigo-200">🎤 Lancer un entretien</button>
+              <button onClick={() => { setActiveMode("technical_mentor"); handleSend("Évalue mon niveau en systèmes embarqués et propose un exercice pratique de démarrage."); }} className="text-left rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-violet-50 hover:border-violet-200">⚙️ Évaluer mon niveau technique</button>
+              <button onClick={() => { setActiveMode("general"); handleSend("Analyse mon projet d'études et donne-moi les trois prochaines actions prioritaires."); }} className="text-left rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-sky-50 hover:border-sky-200">🎓 Structurer ma candidature</button>
             </div>
           </div>
 

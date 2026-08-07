@@ -50,6 +50,21 @@ CREATE TABLE IF NOT EXISTS gemini_chat_messages (
   mode VARCHAR(255) DEFAULT 'english_coach', provider VARCHAR(50) DEFAULT 'gemini', sender VARCHAR(50) NOT NULL, text TEXT NOT NULL, created_at TIMESTAMP DEFAULT NOW()
 );
 
+-- IA proactive: track daily-plan action outcomes (completed/dismissed)
+CREATE TABLE IF NOT EXISTS ai_action_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id VARCHAR(255) NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+  plan_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  action_key VARCHAR(120) NOT NULL,
+  action_title VARCHAR(255) NOT NULL,
+  category VARCHAR(100) DEFAULT 'general',
+  status VARCHAR(20) NOT NULL CHECK (status IN ('completed', 'dismissed')),
+  source VARCHAR(50) NOT NULL DEFAULT 'daily_plan',
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE (user_id, plan_date, action_key)
+);
+
 -- User Study Profile: no invented personal defaults. A new account starts empty and fills this during onboarding.
 CREATE TABLE IF NOT EXISTS user_profiles (
   user_id VARCHAR(255) PRIMARY KEY REFERENCES "user"(id) ON DELETE CASCADE,
@@ -70,3 +85,5 @@ CREATE INDEX IF NOT EXISTS planner_tasks_user_id_idx ON planner_tasks(user_id);
 CREATE INDEX IF NOT EXISTS flashcards_user_id_idx ON flashcards(user_id);
 CREATE INDEX IF NOT EXISTS gemini_chat_messages_user_id_idx ON gemini_chat_messages(user_id);
 CREATE INDEX IF NOT EXISTS technical_progress_user_id_idx ON technical_progress(user_id);
+CREATE INDEX IF NOT EXISTS ai_action_events_user_id_idx ON ai_action_events(user_id);
+CREATE INDEX IF NOT EXISTS ai_action_events_plan_date_idx ON ai_action_events(plan_date);

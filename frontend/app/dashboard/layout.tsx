@@ -55,9 +55,9 @@ export default function DashboardLayout({
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50/70 flex flex-col md:flex-row font-sans text-slate-800">
+    <div className="min-h-screen bg-transparent flex flex-col md:flex-row font-sans text-slate-800">
       {/* Mobile Top Navbar */}
-      <div className="md:hidden bg-slate-900 text-white flex items-center justify-between px-4 py-3 border-b border-slate-800">
+      <div className="md:hidden bg-slate-950 text-white flex items-center justify-between px-4 py-3 border-b border-slate-800">
         <Link href="/dashboard" className="flex items-center gap-2 font-bold text-base">
           <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white font-black text-sm shadow-md">
             SH
@@ -74,7 +74,7 @@ export default function DashboardLayout({
 
       {/* Sidebar Navigation */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 w-64 bg-slate-900 text-slate-300 transform transition-transform duration-200 ease-in-out md:translate-x-0 md:static md:inset-auto flex flex-col justify-between border-r border-slate-800/80 ${
+        className={`fixed inset-y-0 left-0 z-40 w-64 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-900 text-slate-300 transform transition-transform duration-200 ease-in-out md:translate-x-0 md:static md:inset-auto flex flex-col justify-between border-r border-slate-800/80 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -82,7 +82,7 @@ export default function DashboardLayout({
           {/* Brand Logo */}
           <div className="p-6 border-b border-slate-800/80 hidden md:flex items-center justify-between">
             <Link href="/dashboard" className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white font-black text-sm shadow-md">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-violet-500 flex items-center justify-center text-white font-black text-sm shadow-md shadow-indigo-500/30">
                 SH
               </div>
               <div>
@@ -109,7 +109,7 @@ export default function DashboardLayout({
                   onClick={() => setSidebarOpen(false)}
                   className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${
                     isActive
-                      ? "bg-blue-600 text-white shadow-sm"
+                      ? "bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-sm shadow-indigo-500/25"
                       : "text-slate-400 hover:text-white hover:bg-slate-800/60"
                   }`}
                 >
@@ -135,7 +135,7 @@ export default function DashboardLayout({
         </div>
 
         {/* User Profile & Footer Controls */}
-        <div className="p-4 border-t border-slate-800/80 bg-slate-950/40 space-y-3">
+        <div className="p-4 border-t border-slate-800/80 bg-slate-950/60 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 font-bold text-xs border border-slate-700">
@@ -161,9 +161,9 @@ export default function DashboardLayout({
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="hidden md:flex h-16 border-b border-slate-200 bg-white/80 backdrop-blur-md px-8 items-center justify-between sticky top-0 z-30">
+        <header className="hidden md:flex h-16 border-b border-slate-200/80 bg-white/70 backdrop-blur-xl px-8 items-center justify-between sticky top-0 z-30">
           <div className="flex items-center gap-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-100">
+            <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-100">
               Espace Candidat
             </span>
             <span className="text-xs text-slate-500 font-medium">
@@ -172,8 +172,8 @@ export default function DashboardLayout({
           </div>
 
           <div className="flex items-center gap-3 text-xs font-medium text-slate-600">
-            <div className="flex items-center gap-1.5 bg-purple-50 text-purple-700 px-3 py-1.5 rounded-full border border-purple-100">
-              <Zap className="w-3.5 h-3.5 text-purple-600" />
+            <div className="flex items-center gap-1.5 bg-violet-50 text-violet-700 px-3 py-1.5 rounded-full border border-violet-100">
+              <Zap className="w-3.5 h-3.5 text-violet-600" />
               <span>Multi-IA : Gemini 3.6 & Groq Llama 3</span>
             </div>
           </div>
