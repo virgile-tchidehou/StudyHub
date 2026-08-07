@@ -5,156 +5,177 @@ import { env } from '../config/env.js';
 const router = Router();
 router.use(requireAuth);
 
-function buildSystemInstruction(mode) {
+const MODES = new Set(['english_coach', 'technical_mentor', 'interview', 'general']);
+const PROVIDERS = new Set(['gemini', 'groq', 'auto']);
+const MAX_PROMPT_LENGTH = 12000;
+
+function buildSystemInstruction(mode, profile = {}) {
+  const context = `
+You are part of StudyHub, an AI learning and international-study assistant.
+User profile context (use only when relevant):
+- Target degree: ${profile.target_degree || 'not specified'}
+- Field: ${profile.field_of_study || 'not specified'}
+- Target countries: ${Array.isArray(profile.target_countries) ? profile.target_countries.join(', ') : 'not specified'}
+- Current academic level/result: ${profile.current_gpa || 'not specified'}
+- Target English exam/score: ${profile.target_ielts || 'not specified'}
+
+Never invent missing user information. Ask a concise follow-up question when it is necessary.
+`;
+
   switch (mode) {
     case 'english_coach':
-      return `You are StudyHub's AI English Coach for international students preparing for IELTS, TOEFL, and academic SOPs.
-Help with speaking (Part 1-3), grammar corrections, C1/C2 vocabulary enhancements, and essay feedback.
-Be encouraging, structured, and give actionable band-score advice. Respond in clear English.`;
+      return `${context}
+You are StudyHub's AI English Coach. Help international-study applicants improve practical and academic English for IELTS, TOEFL and university communication.
+Prioritize the user's actual level and goal. When correcting English, use this structure when useful:
+1. Corrected version
+2. What was wrong
+3. Better alternatives
+4. One short practice task
+For speaking practice, ask one question at a time and wait for the user's answer. Do not overwhelm the learner with C1/C2 vocabulary unless it is appropriate.
+Respond in English by default, but briefly explain difficult points in French when the learner needs it.`;
+
     case 'technical_mentor':
-      return `You are StudyHub's Technical Mentor for Master & PhD applicants.
-Explain engineering concepts (Embedded Systems, RTOS, ARM, C/C++, AI, Data Science, Linux) concisely with clear code snippets and interview whiteboard tips.`;
+      return `${context}
+You are StudyHub's Technical Mentor. Focus on Embedded Systems, IoT, C/C++, Python, Linux, RTOS, robotics, AI and engineering software.
+Teach rather than simply provide answers. Adapt explanations to the learner's level, use practical examples, point out engineering trade-offs, and provide small exercises or interview questions when useful.
+When code is requested, prefer correct, maintainable examples and explain important design decisions.`;
+
     case 'interview':
-      return `Vous êtes un membre exigeant et bienveillant du jury d'entretien Campus France / Bourses d'Excellence DAAD / Visa d'Études.
-Posez une question ciblée sur les motivations, le projet d'études, l'adéquation diplôme-carrière, ou le plan de financement. Évaluez la réponse et donnez un conseil d'amélioration immédiat.`;
+      return `${context}
+You are a demanding but supportive interviewer for international university admissions, scholarships and technical interviews.
+Ask one focused question at a time. After the user's answer, evaluate clarity, coherence, evidence, technical accuracy and communication. Give a concise score or assessment, then specific improvements and an improved example answer when useful.`;
+
     case 'general':
     default:
-      return "Vous êtes un mentor expert en orientation et candidatures aux études internationales pour Master, Doctorat et bourses d'études à l'étranger.";
+      return `${context}
+You are StudyHub's AI Mentor for international study preparation, scholarships, academic planning, career development and learning.
+Give practical, structured and honest guidance. Separate facts from assumptions and never claim that a scholarship, university requirement or deadline is current unless reliable current data is supplied to you.`;
   }
+}
+
+function sanitizeProfile(profile) {
+  if (!profile || typeof profile !== 'object') return {};
+  return {
+    target_degree: typeof profile.target_degree === 'string' ? profile.target_degree.slice(0, 120) : undefined,
+    field_of_study: typeof profile.field_of_study === 'string' ? profile.field_of_study.slice(0, 255) : undefined,
+    target_countries: Array.isArray(profile.target_countries)
+      ? profile.target_countries.filter((x) => typeof x === 'string').slice(0, 10)
+      : undefined,
+    current_gpa: typeof profile.current_gpa === 'string' ? profile.current_gpa.slice(0, 50) : undefined,
+    target_ielts: typeof profile.target_ielts === 'string' ? profile.target_ielts.slice(0, 50) : undefined,
+  };
 }
 
 async function callGemini(prompt, mode, systemInstruction) {
   const system = systemInstruction || buildSystemInstruction(mode);
   const url = `${env.geminiApiUrl}/${env.geminiModel}:generateContent?key=${env.geminiApiKey}`;
-
   const body = {
     contents: [{ parts: [{ text: prompt }] }],
     systemInstruction: { parts: [{ text: system }] },
-    generationConfig: { temperature: 0.7, maxOutputTokens: 1024 }
+    generationConfig: { temperature: mode === 'english_coach' ? 0.5 : 0.7, maxOutputTokens: 1400 },
   };
 
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
   });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Gemini error (${response.status}): ${errorText}`);
-  }
-
+  if (!response.ok) throw new Error(`Gemini error (${response.status})`);
   const data = await response.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || 'Réponse reçue.';
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error('Gemini returned an empty response');
   return { text, provider: 'gemini' };
 }
 
 async function callGroq(prompt, mode, systemInstruction) {
   const system = systemInstruction || buildSystemInstruction(mode);
-  const url = env.groqApiUrl;
-
-  const body = {
-    model: env.groqModel,
-    messages: [
-      { role: 'system', content: system },
-      { role: 'user', content: prompt }
-    ],
-    temperature: 0.7,
-    max_tokens: 1024
-  };
-
-  const response = await fetch(url, {
+  const response = await fetch(env.groqApiUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${env.groqApiKey}`
+      Authorization: `Bearer ${env.groqApiKey}`,
     },
-    body: JSON.stringify(body)
+    body: JSON.stringify({
+      model: env.groqModel,
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: prompt },
+      ],
+      temperature: mode === 'english_coach' ? 0.5 : 0.7,
+      max_tokens: 1400,
+    }),
   });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Groq error (${response.status}): ${errorText}`);
-  }
-
+  if (!response.ok) throw new Error(`Groq error (${response.status})`);
   const data = await response.json();
-  const text = data?.choices?.[0]?.message?.content || 'Réponse reçue de Groq.';
+  const text = data?.choices?.[0]?.message?.content;
+  if (!text) throw new Error('Groq returned an empty response');
   return { text, provider: 'groq' };
 }
 
-// POST /api/ai/ask
+function getOfflineAdvice(prompt, mode) {
+  if (mode === 'english_coach') {
+    return `Let's practice English together.\n\nStart with this question:\n\n"Tell me about your academic background and why you want to study abroad."\n\nAnswer in English in 4–6 sentences. I will correct your grammar, vocabulary and clarity.`;
+  }
+  if (mode === 'interview') {
+    return `Interview practice:\n\nWhy did you choose this field of study, and how does it fit into your long-term career plan?\n\nAnswer naturally in 60–90 seconds. I will then evaluate your response.`;
+  }
+  if (mode === 'technical_mentor') {
+    return `Technical practice:\n\nChoose one topic (C/C++, embedded Linux, RTOS, MQTT, ROS2 or IoT) and tell me your current level. I will build a short learning path and give you a practical exercise.`;
+  }
+  return `I'm ready to help you plan your international-study journey. Tell me your current objective, and we will turn it into concrete next steps.`;
+}
+
 router.post('/ask', async (req, res) => {
   try {
-    const { prompt, mode, provider = 'auto', systemInstruction } = req.body || {};
+    const {
+      prompt,
+      mode = 'general',
+      provider = 'auto',
+      systemInstruction,
+      profile,
+    } = req.body || {};
 
     if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
       return res.status(400).json({ error: 'Prompt is required' });
     }
+    if (prompt.length > MAX_PROMPT_LENGTH) {
+      return res.status(413).json({ error: `Prompt is too long (maximum ${MAX_PROMPT_LENGTH} characters)` });
+    }
+    if (!MODES.has(mode)) return res.status(400).json({ error: 'Invalid AI mode' });
+    if (!PROVIDERS.has(provider)) return res.status(400).json({ error: 'Invalid AI provider' });
 
-    // Provider selection logic (Groq / Gemini / Fallback)
+    const safeProfile = sanitizeProfile(profile);
+    const generatedSystem = buildSystemInstruction(mode, safeProfile);
+    // Client-supplied system instructions are intentionally ignored for now.
+    // This prevents users from replacing StudyHub's safety/product behavior.
+    const requestPrompt = prompt.trim();
+
     if (provider === 'groq' && env.groqApiKey) {
-      try {
-        const result = await callGroq(prompt, mode, systemInstruction);
-        return res.json(result);
-      } catch (err) {
-        console.warn('Groq failed, falling back to Gemini/offline:', err.message);
-      }
+      try { return res.json(await callGroq(requestPrompt, mode, generatedSystem)); }
+      catch (error) { console.warn('Groq failed:', error.message); }
     }
 
     if (env.geminiApiKey) {
-      try {
-        const result = await callGemini(prompt, mode, systemInstruction);
-        return res.json(result);
-      } catch (err) {
-        console.warn('Gemini failed:', err.message);
-      }
+      try { return res.json(await callGemini(requestPrompt, mode, generatedSystem)); }
+      catch (error) { console.warn('Gemini failed:', error.message); }
     }
 
     if (env.groqApiKey) {
-      try {
-        const result = await callGroq(prompt, mode, systemInstruction);
-        return res.json(result);
-      } catch (err) {
-        console.warn('Groq failed:', err.message);
-      }
+      try { return res.json(await callGroq(requestPrompt, mode, generatedSystem)); }
+      catch (error) { console.warn('Groq fallback failed:', error.message); }
     }
 
-    // Offline Intelligent Coach Response if API keys not configured
-    const offlineAdvice = getOfflineAdvice(prompt, mode);
     return res.json({
-      text: offlineAdvice,
+      text: getOfflineAdvice(requestPrompt, mode),
       provider: 'offline_coach',
-      notice: 'Clés API Gemini/Groq non configurées dans le .env — Mode Assistant Étudiant Actif.'
+      notice: 'No AI provider is configured. StudyHub is running in offline coaching mode.',
     });
   } catch (error) {
     console.error('AI route error:', error);
-    res.status(500).json({ error: 'Erreur lors de la communication avec le service IA' });
+    return res.status(500).json({ error: 'Erreur lors de la communication avec le service IA' });
   }
 });
-
-function getOfflineAdvice(prompt, mode) {
-  const p = prompt.toLowerCase();
-  if (mode === 'english_coach' || p.includes('speaking') || p.includes('ielts')) {
-    return `Conseil Coach IELTS (Mode Assistant) :
-Pour répondre avec succès aux questions d'oral (Speaking Part 2 & 3), appliquez la structure AREA :
-1. Answer : Répondez directement à la question.
-2. Reason : Donnez la raison principale.
-3. Example : Illustrez avec une expérience personnelle ou académique.
-4. Alternative : Évoquez un contre-exemple ou une perspective d'avenir.
-
-Exemple de connecteurs C1 : "Furthermore", "Consequently", "Pivotal", "Paramount".`;
-  }
-  if (mode === 'interview' || p.includes('campus france') || p.includes('entretien')) {
-    return `Conseil Entretien Campus France & Visas :
-Le jury cherche 3 éléments essentiels :
-1. La cohérence du parcours : Pourquoi ce Master précisément après votre diplôme actuel ?
-2. Le projet professionnel : Quel poste viserez-vous après l'obtention du diplôme ?
-3. Le plan de financement : Justifiez les ressources financières et l'autonomie sur place.`;
-  }
-  return `Bonjour ! Pour maximiser vos chances d'admission en Master et l'obtention d'une bourse d'excellence :
-- Assurez-vous que votre CV Académique respecte la norme Europass.
-- Rédigez votre Statement of Purpose en montrant ce que VOUS allez apporter à l'université.
-- Préparez votre attestation d'anglais (IELTS 7.0+ ou TOEFL 90+).`;
-}
 
 export default router;
