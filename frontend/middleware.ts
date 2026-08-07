@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 const publicRoutes = ["/", "/login"];
-const apiAuthRoutes = ["/api/auth"];
 const publicAssets = ["/favicon.ico", "/logo.png"];
 
 export function middleware(request: NextRequest) {
@@ -10,7 +9,7 @@ export function middleware(request: NextRequest) {
 
   if (
     publicRoutes.includes(pathname) ||
-    apiAuthRoutes.includes(pathname) ||
+    pathname.startsWith("/api/") ||          // proxied to backend, skip auth gate
     pathname.startsWith("/_next") ||
     publicAssets.includes(pathname)
   ) {
