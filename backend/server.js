@@ -6,6 +6,7 @@ import goalsRouter from './src/routes/goals.js';
 import universitiesRouter from './src/routes/universities.js';
 import documentsRouter from './src/routes/documents.js';
 import authRoutes from './src/routes/auth.js';
+import profileRouter from './src/routes/profile.js';
 import geminiRouter from './src/routes/gemini.js';
 import aiRouter from './src/routes/ai.js';
 import flashcardsRouter from './src/routes/flashcards.js';
@@ -23,9 +24,8 @@ const app = express();
 const FRONTEND_URL = env.frontendUrl;
 app.use(cors({ origin: FRONTEND_URL, credentials: true }));
 app.options('*', cors({ origin: FRONTEND_URL, credentials: true }));
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 
-// Business API Routes
 app.use('/api/goals', goalsRouter);
 app.use('/api/universities', universitiesRouter);
 app.use('/api/documents', documentsRouter);
@@ -34,12 +34,13 @@ app.use('/api/planner', plannerRouter);
 app.use('/api/resources', resourcesRouter);
 app.use('/api/technical', technicalRouter);
 app.use('/api/auth', authRoutes);
+app.use('/api/profile', profileRouter);
 app.use('/api/gemini', geminiRouter);
 app.use('/api/ai', aiRouter);
 app.use('/api/flashcards', flashcardsRouter);
 app.use('/api/chat-messages', chatMessagesRouter);
 
-// Serve uploaded files statically
+// Temporary/local document storage. Move sensitive documents to private object storage before production.
 app.use('/uploads', express.static(path.resolve(process.cwd(), '..', 'uploads')));
 
 app.get('/health', async (_req, res) => {
@@ -57,7 +58,6 @@ app.get('/', (_req, res) => {
 
 export default app;
 
-// Start the server if executing directly
 if (process.env.NODE_ENV !== 'test') {
   app.listen(env.port, async () => {
     console.log('');
@@ -65,7 +65,6 @@ if (process.env.NODE_ENV !== 'test') {
     console.log(`║  🎓 StudyHub Backend  —  http://localhost:${env.port}   ║`);
     console.log('╚══════════════════════════════════════════════════╝');
 
-    // Database connection check
     try {
       const db = await healthCheck();
       console.log(`✅ Base de données  :  ${db.database}  (PostgreSQL OK)`);
@@ -75,9 +74,8 @@ if (process.env.NODE_ENV !== 'test') {
       console.warn('   Vérifiez DATABASE_URL dans votre fichier .env');
     }
 
-    // AI providers status
     const geminiStatus = env.geminiApiKey ? '✅ Configuré' : '⚠️  Clé manquante (GEMINI_API_KEY)';
-    const groqStatus   = env.groqApiKey   ? '✅ Configuré' : '⚠️  Clé manquante (GROQ_API_KEY)';
+    const groqStatus = env.groqApiKey ? '✅ Configuré' : '⚠️  Clé manquante (GROQ_API_KEY)';
     console.log(`🤖 Gemini API       :  ${geminiStatus}`);
     console.log(`🦙 Groq API         :  ${groqStatus}`);
     console.log(`🌐 Frontend autorisé:  ${env.frontendUrl}`);
