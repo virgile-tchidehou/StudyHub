@@ -2,34 +2,35 @@ import { betterAuth } from 'better-auth';
 import { Pool } from 'pg';
 import { env } from './env.js';
 
-const isDev = process.env.NODE_ENV !== 'production';
+const isProduction = process.env.NODE_ENV === 'production';
+const developmentAuthSecret = 'dev-only-studyhub-secret-change-before-production';
+
+if (isProduction && !env.betterAuthSecret) {
+  throw new Error('BETTER_AUTH_SECRET is required in production.');
+}
 
 export const auth = betterAuth({
-  secret: process.env.BETTER_AUTH_SECRET || 'change-me-change-me-change-me-000000',
-  baseURL: process.env.BETTER_AUTH_URL || 'http://localhost:8000',
+  secret: env.betterAuthSecret || developmentAuthSecret,
+  baseURL: env.betterAuthUrl,
   trustedOrigins: [
-    process.env.BETTER_AUTH_URL || 'http://localhost:8000',
+    env.betterAuthUrl,
     env.frontendUrl,
     'http://localhost:3000',
-  ],
-  // Frontend (Next.js :3000) and backend (Express :8000) run on separate origins.
-  // Cross-origin cookie sharing requires SameSite=None (+ Secure in prod).
+  ].filter(Boolean),
   advanced: {
-    disableOriginCheck: true,
-    disableCSRFCheck: true,
+    // Keep CSRF/origin protections enabled. The frontend sends credentials
+    // through the Next.js proxy, while trustedOrigins defines valid origins.
     cookieOptions: {
-      // In dev, allow cross-origin cookie without HTTPS
-      sameSite: isDev ? 'none' : 'none',
-      secure: isDev ? false : true,
+      sameSite: 'lax',
+      secure: isProduction,
       httpOnly: true,
       path: '/',
     },
   },
   database: new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: env.databaseUrl,
   }),
   emailAndPassword: {
     enabled: true,
   },
 });
-
