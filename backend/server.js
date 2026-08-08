@@ -16,6 +16,7 @@ import plannerRouter from './src/routes/planner.js';
 import resourcesRouter from './src/routes/resources.js';
 import technicalRouter from './src/routes/technical.js';
 import learningRouter from './src/routes/learning.js';
+import learningDiagnosticRouter from './src/routes/learning-diagnostic.js';
 import { env } from './src/config/env.js';
 import { healthCheck } from './src/config/database.js';
 
@@ -35,6 +36,7 @@ app.use('/api/planner', plannerRouter);
 app.use('/api/resources', resourcesRouter);
 app.use('/api/technical', technicalRouter);
 app.use('/api/learning', learningRouter);
+app.use('/api/learning/diagnostic', learningDiagnosticRouter);
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRouter);
 app.use('/api/gemini', geminiRouter);
