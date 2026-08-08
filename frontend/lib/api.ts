@@ -16,219 +16,39 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export type Goal = {
-  id: string;
-  title: string;
-  description: string | null;
-  category?: string;
-  target_date: string | null;
-  progress: number;
-  completed: boolean;
-  user_id: string;
-  created_at: string;
-  updated_at: string;
-};
+export type Goal = { id:string; title:string; description:string|null; category?:string; target_date:string|null; progress:number; completed:boolean; user_id:string; created_at:string; updated_at:string };
+export type University = { id:string; name:string; country:string|null; description:string|null; website:string|null; ranking:number|null; requirements:string|null; deadlines:string|null; application_status?:"researching"|"preparing"|"submitted"|"accepted"|"rejected"; user_id:string; created_at:string; updated_at:string };
+export type DocumentItem = { id:string; title:string; type:string|null; status:string; content:string|null; file_path:string|null; expires_at:string|null; user_id:string; university_id:string|null; created_at:string; updated_at:string };
+export type Scholarship = { id:string; name:string; organization:string; amount:string; deadline:string; coverage:string; country:string; field_of_study?:string; status:"eligible"|"saved"|"applied"|"awarded"; link:string };
+export type PlannerTask = { id:string; title:string; category:"english"|"technical"|"document"|"university"; duration_minutes?:number; durationMinutes?:number; due_date?:string; dueDate?:string; completed:boolean; user_id:string };
+export type ResourceItem = { id:string; title:string; category:"MOOC"|"Book"|"Guide"|"YouTube"|"PDF"|"Template"; url:string; description:string; tags:string[] };
+export type Flashcard = { id:string; word:string; phonetic:string; definition:string; example:string; category:"IELTS Academic"|"GRE/GMAT"|"TOEFL"|"Technical English"; mastered:boolean };
+export type TechnicalProgressNode = { track_id:string; node_id:string; status:string };
+export type StudyProfile = { target_degree:string|null; field_of_study:string|null; target_countries:string[]; current_gpa:string|null; target_ielts:string|null; updated_at?:string };
+export type AIMode = "english_coach"|"technical_mentor"|"interview"|"general";
+export type AIProvider = "gemini"|"groq"|"auto";
+export type AIHistoryMessage = { role:"user"|"assistant"; content:string };
+export type AIResponse = { text:string; provider:string; notice?:string };
+export type AIRecommendationAction = { title:string; detail:string; priority:"high"|"medium"|"low" };
+export type AIRecommendation = { title:string; summary:string; focus:string; actions:AIRecommendationAction[]; generatedAt:string };
+export type AIDailyPlanActionState = "pending"|"completed"|"dismissed";
+export type AIDailyPlanAction = { actionKey:string; title:string; detail:string; category:string; etaMinutes:number; state:AIDailyPlanActionState };
+export type AIDailyPlan = { title:string; focus:string; summary:string; progressSummary:{activeGoals:number; pendingTasks:number; universities:number; scholarships:number}; tracking:{completedToday:number; dismissedToday:number; totalActions:number}; actions:AIDailyPlanAction[]; generatedAt:string };
+export type AIDailyPlanProgress = { completed:number; dismissed:number; total:number; date:string };
+export type LearningState = { profile: {targetDegree:string|null; fieldOfStudy:string|null; targetCountries:string[]; currentGpa:string|null; targetIelts:string|null}; english:{flashcards:{total:number; mastered:number; masteryPercent:number}; targetIelts:string|null; status:"not_assessed"|"needs_practice"|"developing"}; technical:{totalNodes:number; completedNodes:number; progressPercent:number; tracks:TechnicalProgressNode[]}; applications:{universities:University[]; documents:Array<{type:string;status:string;count:number}>}; productivity:{goals:Goal[]; averageGoalProgress:number; plannerCompleted:number; plannerPending:number} };
+export type LearningPriority = { type:string; title:string; reason:string; durationMinutes:number };
+export type LearningSummary = { overallProgress:number; english:LearningState["english"]; technical:LearningState["technical"]; applications:{universityCount:number; documentGroups:number}; productivity:LearningState["productivity"]; nextActions:LearningPriority[] };
 
-export type University = {
-  id: string;
-  name: string;
-  country: string | null;
-  description: string | null;
-  website: string | null;
-  ranking: number | null;
-  requirements: string | null;
-  deadlines: string | null;
-  application_status?: "researching" | "preparing" | "submitted" | "accepted" | "rejected";
-  user_id: string;
-  created_at: string;
-  updated_at: string;
-};
-
-export type DocumentItem = {
-  id: string;
-  title: string;
-  type: string | null;
-  status: string;
-  content: string | null;
-  file_path: string | null;
-  expires_at: string | null;
-  user_id: string;
-  university_id: string | null;
-  created_at: string;
-  updated_at: string;
-};
-
-export type Scholarship = {
-  id: string;
-  name: string;
-  organization: string;
-  amount: string;
-  deadline: string;
-  coverage: string;
-  country: string;
-  field_of_study?: string;
-  status: "eligible" | "saved" | "applied" | "awarded";
-  link: string;
-};
-
-export type PlannerTask = {
-  id: string;
-  title: string;
-  category: "english" | "technical" | "document" | "university";
-  duration_minutes?: number;
-  durationMinutes?: number;
-  due_date?: string;
-  dueDate?: string;
-  completed: boolean;
-  user_id: string;
-};
-
-export type ResourceItem = {
-  id: string;
-  title: string;
-  category: "MOOC" | "Book" | "Guide" | "YouTube" | "PDF" | "Template";
-  url: string;
-  description: string;
-  tags: string[];
-};
-
-export type Flashcard = {
-  id: string;
-  word: string;
-  phonetic: string;
-  definition: string;
-  example: string;
-  category: "IELTS Academic" | "GRE/GMAT" | "TOEFL" | "Technical English";
-  mastered: boolean;
-};
-
-export type TechnicalProgressNode = {
-  track_id: string;
-  node_id: string;
-  status: string;
-};
-
-export type StudyProfile = {
-  target_degree: string | null;
-  field_of_study: string | null;
-  target_countries: string[];
-  current_gpa: string | null;
-  target_ielts: string | null;
-  updated_at?: string;
-};
-
-export type AIMode = "english_coach" | "technical_mentor" | "interview" | "general";
-export type AIProvider = "gemini" | "groq" | "auto";
-export type AIHistoryMessage = { role: "user" | "assistant"; content: string };
-export type AIResponse = { text: string; provider: string; notice?: string };
-export type AIRecommendationAction = { title: string; detail: string; priority: "high" | "medium" | "low" };
-export type AIRecommendation = { title: string; summary: string; focus: string; actions: AIRecommendationAction[]; generatedAt: string };
-export type AIDailyPlanActionState = "pending" | "completed" | "dismissed";
-export type AIDailyPlanAction = { actionKey: string; title: string; detail: string; category: string; etaMinutes: number; state: AIDailyPlanActionState };
-export type AIDailyPlan = {
-  title: string;
-  focus: string;
-  summary: string;
-  progressSummary: { activeGoals: number; pendingTasks: number; universities: number; scholarships: number };
-  tracking: { completedToday: number; dismissedToday: number; totalActions: number };
-  actions: AIDailyPlanAction[];
-  generatedAt: string;
-};
-export type AIDailyPlanProgress = { completed: number; dismissed: number; total: number; date: string };
-
-export const profileApi = {
-  get: () => request<StudyProfile>("/api/profile"),
-  update: (body: Partial<StudyProfile>) => request<StudyProfile>("/api/profile", { method: "PUT", body: JSON.stringify(body) }),
-};
-
-export const goalsApi = {
-  list: () => request<Goal[]>("/api/goals"),
-  create: (body: { title: string; description?: string; category?: string; targetDate?: string }) => request<Goal>("/api/goals", { method: "POST", body: JSON.stringify(body) }),
-  update: (id: string, body: Partial<Goal>) => request<Goal>(`/api/goals/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
-  remove: (id: string) => request<void>(`/api/goals/${id}`, { method: "DELETE" }),
-};
-
-export const universitiesApi = {
-  list: () => request<University[]>("/api/universities"),
-  getById: (id: string) => request<University>(`/api/universities/${id}`),
-  create: (body: { name: string; country?: string; ranking?: number; requirements?: string; deadlines?: string; website?: string; application_status?: string }) => request<University>("/api/universities", { method: "POST", body: JSON.stringify(body) }),
-  update: (id: string, body: Partial<University>) => request<University>(`/api/universities/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
-  remove: (id: string) => request<void>(`/api/universities/${id}`, { method: "DELETE" }),
-};
-
-export const documentsApi = {
-  list: () => request<DocumentItem[]>("/api/documents"),
-  getById: (id: string) => request<DocumentItem>(`/api/documents/${id}`),
-  create: (body: { title: string; type?: string; status?: string; content?: string; university_id?: string | null }, file?: File) => {
-    const formData = new FormData();
-    formData.append('title', body.title);
-    if (body.type) formData.append('type', body.type);
-    if (body.status) formData.append('status', body.status);
-    if (body.content) formData.append('content', body.content);
-    if (body.university_id != null) formData.append('universityId', body.university_id);
-    if (file) formData.append('file', file);
-    return request<DocumentItem>("/api/documents", { method: "POST", body: formData });
-  },
-  update: (id: string, body: Partial<DocumentItem>, file?: File) => {
-    const formData = new FormData();
-    if (body.title != null) formData.append('title', body.title);
-    if (body.type != null) formData.append('type', body.type);
-    if (body.status != null) formData.append('status', body.status);
-    if (body.content != null) formData.append('content', body.content);
-    if (body.university_id != null) formData.append('universityId', body.university_id);
-    if (file) formData.append('file', file);
-    return request<DocumentItem>(`/api/documents/${id}`, { method: "PATCH", body: formData });
-  },
-  remove: (id: string) => request<void>(`/api/documents/${id}`, { method: "DELETE" }),
-};
-
-export const scholarshipsApi = {
-  list: () => request<Scholarship[]>("/api/scholarships"),
-  create: (body: Partial<Scholarship>) => request<Scholarship>("/api/scholarships", { method: "POST", body: JSON.stringify(body) }),
-  update: (id: string, body: Partial<Scholarship>) => request<Scholarship>(`/api/scholarships/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
-  remove: (id: string) => request<void>(`/api/scholarships/${id}`, { method: "DELETE" }),
-  aiSearch: (params: { field?: string; country?: string; level?: string }) => request<{ results: Partial<Scholarship>[] }>("/api/scholarships/ai-search", { method: "POST", body: JSON.stringify(params) }),
-};
-
-export const plannerApi = {
-  list: () => request<PlannerTask[]>("/api/planner"),
-  create: (body: { title: string; category?: string; durationMinutes?: number; dueDate?: string }) => request<PlannerTask>("/api/planner", { method: "POST", body: JSON.stringify(body) }),
-  toggle: (id: string) => request<PlannerTask>("/api/planner", { method: "PATCH", body: JSON.stringify({ id }) }),
-  remove: (id: string) => request<void>(`/api/planner/${id}`, { method: "DELETE" }),
-};
-
-export const resourcesApi = {
-  list: () => request<ResourceItem[]>("/api/resources"),
-  create: (body: Partial<ResourceItem>) => request<ResourceItem>("/api/resources", { method: "POST", body: JSON.stringify(body) }),
-};
-
-export const flashcardsApi = {
-  list: () => request<Flashcard[]>("/api/flashcards"),
-  toggleMastered: (id: string) => request<Flashcard>("/api/flashcards", { method: "PATCH", body: JSON.stringify({ id }) }),
-};
-
-export const technicalApi = {
-  getProgress: () => request<TechnicalProgressNode[]>("/api/technical/progress"),
-  toggleNode: (trackId: string, nodeId: string) => request<{ trackId: string; nodeId: string; status: string }>("/api/technical/toggle", { method: "POST", body: JSON.stringify({ trackId, nodeId }) }),
-};
-
-export const aiApi = {
-  ask: (prompt: string, mode: AIMode = "general", provider: AIProvider = "auto", historyOrLegacyInstruction: AIHistoryMessage[] | string = []) => {
-    const history = Array.isArray(historyOrLegacyInstruction) ? historyOrLegacyInstruction : [];
-    return request<AIResponse>("/api/ai/ask", { method: "POST", body: JSON.stringify({ prompt, mode, provider, history }) });
-  },
-  recommendations: (mode: AIMode = "general") => request<AIRecommendation>("/api/ai/recommendations", { method: "POST", body: JSON.stringify({ mode }) }),
-  dailyPlan: (mode: AIMode = "general") => request<AIDailyPlan>("/api/ai/daily-plan", { method: "POST", body: JSON.stringify({ mode }) }),
-  updateDailyPlanAction: (body: { actionKey: string; actionTitle: string; category?: string; status: "completed" | "dismissed" }) => request<{ action_key: string; action_title: string; category: string; status: "completed" | "dismissed"; plan_date: string; updated_at: string }>("/api/ai/daily-plan/action", { method: "POST", body: JSON.stringify(body) }),
-  dailyPlanProgress: () => request<AIDailyPlanProgress>("/api/ai/daily-plan/progress"),
-};
-
-export const geminiApi = {
-  ask: (prompt: string, mode?: AIMode, history?: AIHistoryMessage[]) => aiApi.ask(prompt, mode, "auto", history || []),
-};
-
-export const chatMessagesApi = {
-  list: () => request<{ id: string; mode: string; sender: string; text: string; created_at: string }[]>("/api/chat-messages"),
-  create: (body: { mode?: string; sender: string; text: string; provider?: string }) => request<{ id: string; mode: string; sender: string; text: string; created_at: string }>("/api/chat-messages", { method: "POST", body: JSON.stringify(body) }),
-  clear: (mode?: string) => request<void>("/api/chat-messages", { method: "DELETE", body: JSON.stringify({ mode: mode || "english_coach" }) }),
-};
+export const profileApi={get:()=>request<StudyProfile>("/api/profile"),update:(body:Partial<StudyProfile>)=>request<StudyProfile>("/api/profile",{method:"PUT",body:JSON.stringify(body)})};
+export const goalsApi={list:()=>request<Goal[]>("/api/goals"),create:(body:{title:string;description?:string;category?:string;targetDate?:string})=>request<Goal>("/api/goals",{method:"POST",body:JSON.stringify(body)}),update:(id:string,body:Partial<Goal>)=>request<Goal>(`/api/goals/${id}`,{method:"PATCH",body:JSON.stringify(body)}),remove:(id:string)=>request<void>(`/api/goals/${id}`,{method:"DELETE"})};
+export const universitiesApi={list:()=>request<University[]>("/api/universities"),getById:(id:string)=>request<University>(`/api/universities/${id}`),create:(body:{name:string;country?:string;ranking?:number;requirements?:string;deadlines?:string;website?:string;application_status?:string})=>request<University>("/api/universities",{method:"POST",body:JSON.stringify(body)}),update:(id:string,body:Partial<University>)=>request<University>(`/api/universities/${id}`,{method:"PATCH",body:JSON.stringify(body)}),remove:(id:string)=>request<void>(`/api/universities/${id}`,{method:"DELETE"})};
+export const documentsApi={list:()=>request<DocumentItem[]>("/api/documents"),getById:(id:string)=>request<DocumentItem>(`/api/documents/${id}`),create:(body:{title:string;type?:string;status?:string;content?:string;university_id?:string|null},file?:File)=>{const formData=new FormData();formData.append('title',body.title);if(body.type)formData.append('type',body.type);if(body.status)formData.append('status',body.status);if(body.content)formData.append('content',body.content);if(body.university_id!=null)formData.append('universityId',body.university_id);if(file)formData.append('file',file);return request<DocumentItem>("/api/documents",{method:"POST",body:formData})},update:(id:string,body:Partial<DocumentItem>,file?:File)=>{const formData=new FormData();if(body.title!=null)formData.append('title',body.title);if(body.type!=null)formData.append('type',body.type);if(body.status!=null)formData.append('status',body.status);if(body.content!=null)formData.append('content',body.content);if(body.university_id!=null)formData.append('universityId',body.university_id);if(file)formData.append('file',file);return request<DocumentItem>(`/api/documents/${id}`,{method:"PATCH",body:formData})},remove:(id:string)=>request<void>(`/api/documents/${id}`,{method:"DELETE"})};
+export const scholarshipsApi={list:()=>request<Scholarship[]>("/api/scholarships"),create:(body:Partial<Scholarship>)=>request<Scholarship>("/api/scholarships",{method:"POST",body:JSON.stringify(body)}),update:(id:string,body:Partial<Scholarship>)=>request<Scholarship>(`/api/scholarships/${id}`,{method:"PATCH",body:JSON.stringify(body)}),remove:(id:string)=>request<void>(`/api/scholarships/${id}`,{method:"DELETE"}),aiSearch:(params:{field?:string;country?:string;level?:string})=>request<{results:Partial<Scholarship>[]}>("/api/scholarships/ai-search",{method:"POST",body:JSON.stringify(params)})};
+export const plannerApi={list:()=>request<PlannerTask[]>("/api/planner"),create:(body:{title:string;category?:string;durationMinutes?:number;dueDate?:string})=>request<PlannerTask>("/api/planner",{method:"POST",body:JSON.stringify(body)}),toggle:(id:string)=>request<PlannerTask>("/api/planner",{method:"PATCH",body:JSON.stringify({id})}),remove:(id:string)=>request<void>(`/api/planner/${id}`,{method:"DELETE"})};
+export const resourcesApi={list:()=>request<ResourceItem[]>("/api/resources"),create:(body:Partial<ResourceItem>)=>request<ResourceItem>("/api/resources",{method:"POST",body:JSON.stringify(body)})};
+export const flashcardsApi={list:()=>request<Flashcard[]>("/api/flashcards"),toggleMastered:(id:string)=>request<Flashcard>("/api/flashcards",{method:"PATCH",body:JSON.stringify({id})})};
+export const technicalApi={getProgress:()=>request<TechnicalProgressNode[]>("/api/technical/progress"),toggleNode:(trackId:string,nodeId:string)=>request<{trackId:string;nodeId:string;status:string}>("/api/technical/toggle",{method:"POST",body:JSON.stringify({trackId,nodeId})})};
+export const learningApi={state:()=>request<LearningState>("/api/learning/state"),priorities:()=>request<{actions:LearningPriority[];generatedAt:string}>("/api/learning/priorities"),summary:()=>request<LearningSummary>("/api/learning/summary")};
+export const aiApi={ask:(prompt:string,mode:AIMode="general",provider:AIProvider="auto",historyOrLegacyInstruction:AIHistoryMessage[]|string=[]):Promise<AIResponse>=>{const history=Array.isArray(historyOrLegacyInstruction)?historyOrLegacyInstruction:[];return request<AIResponse>("/api/ai/ask",{method:"POST",body:JSON.stringify({prompt,mode,provider,history})})},recommendations:(mode:AIMode="general")=>request<AIRecommendation>("/api/ai/recommendations",{method:"POST",body:JSON.stringify({mode})}),dailyPlan:(mode:AIMode="general")=>request<AIDailyPlan>("/api/ai/daily-plan",{method:"POST",body:JSON.stringify({mode})}),updateDailyPlanAction:(body:{actionKey:string;actionTitle:string;category?:string;status:"completed"|"dismissed"})=>request<{action_key:string;action_title:string;category:string;status:"completed"|"dismissed";plan_date:string;updated_at:string}>("/api/ai/daily-plan/action",{method:"POST",body:JSON.stringify(body)}),dailyPlanProgress:()=>request<AIDailyPlanProgress>("/api/ai/daily-plan/progress")};
+export const geminiApi={ask:(prompt:string,mode?:AIMode,history?:AIHistoryMessage[])=>aiApi.ask(prompt,mode,"auto",history||[])};
+export const chatMessagesApi={list:()=>request<{id:string;mode:string;sender:string;text:string;created_at:string}[]>("/api/chat-messages"),create:(body:{mode?:string;sender:string;text:string;provider?:string})=>request<{id:string;mode:string;sender:string;text:string;created_at:string}>("/api/chat-messages",{method:"POST",body:JSON.stringify(body)}),clear:(mode?:string)=>request<void>("/api/chat-messages",{method:"DELETE",body:JSON.stringify({mode:mode||"english_coach"})})};
