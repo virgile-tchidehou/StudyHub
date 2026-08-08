@@ -3,15 +3,9 @@ export const API_BASE = "";
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
-  const headers: Record<string, string> = {
-    ...(isFormData ? {} : { "Content-Type": "application/json" }),
-    ...(options.headers as Record<string, string> || {}),
-  };
+  const headers: Record<string, string> = { ...(isFormData ? {} : { "Content-Type": "application/json" }), ...(options.headers as Record<string, string> || {}) };
   const res = await fetch(`${API_BASE}${path}`, { ...options, headers, credentials: "include" });
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data?.message || data?.error || `Request failed (${res.status})`);
-  }
+  if (!res.ok) { const data = await res.json().catch(() => ({})); throw new Error(data?.message || data?.error || `Request failed (${res.status})`); }
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
 }
@@ -35,9 +29,11 @@ export type AIDailyPlanActionState = "pending"|"completed"|"dismissed";
 export type AIDailyPlanAction = { actionKey:string; title:string; detail:string; category:string; etaMinutes:number; state:AIDailyPlanActionState };
 export type AIDailyPlan = { title:string; focus:string; summary:string; progressSummary:{activeGoals:number; pendingTasks:number; universities:number; scholarships:number}; tracking:{completedToday:number; dismissedToday:number; totalActions:number}; actions:AIDailyPlanAction[]; generatedAt:string };
 export type AIDailyPlanProgress = { completed:number; dismissed:number; total:number; date:string };
-export type LearningState = { profile: {targetDegree:string|null; fieldOfStudy:string|null; targetCountries:string[]; currentGpa:string|null; targetIelts:string|null}; english:{flashcards:{total:number; mastered:number; masteryPercent:number}; targetIelts:string|null; status:"not_assessed"|"needs_practice"|"developing"}; technical:{totalNodes:number; completedNodes:number; progressPercent:number; tracks:TechnicalProgressNode[]}; applications:{universities:University[]; documents:Array<{type:string;status:string;count:number}>}; productivity:{goals:Goal[]; averageGoalProgress:number; plannerCompleted:number; plannerPending:number} };
+export type EnglishDiagnosticQuestion = { id:string; skill:string; level:string; prompt:string; options:string[] };
+export type EnglishDiagnosticResult = { score:number; level:string; correct:number; total:number; weaknesses:string[]; skillScores:Record<string,{correct:number;total:number}> };
+export type LearningState = { profile:{targetDegree:string|null;fieldOfStudy:string|null;targetCountries:string[];currentGpa:string|null;targetIelts:string|null}; english:{diagnostic:{score:number;level:string;weaknesses:string[];assessedAt:string}|null;flashcards:{total:number;mastered:number;masteryPercent:number};targetIelts:string|null;status:"not_assessed"|"assessed"}; technical:{totalNodes:number;completedNodes:number;progressPercent:number;tracks:TechnicalProgressNode[]}; applications:{universities:University[];documents:Array<{type:string;status:string;count:number}>}; productivity:{goals:Goal[];averageGoalProgress:number;plannerCompleted:number;plannerPending:number} };
 export type LearningPriority = { type:string; title:string; reason:string; durationMinutes:number };
-export type LearningSummary = { overallProgress:number; english:LearningState["english"]; technical:LearningState["technical"]; applications:{universityCount:number; documentGroups:number}; productivity:LearningState["productivity"]; nextActions:LearningPriority[] };
+export type LearningSummary = { overallProgress:number; english:LearningState["english"]; technical:LearningState["technical"]; applications:{universityCount:number;documentGroups:number}; productivity:LearningState["productivity"]; nextActions:LearningPriority[] };
 
 export const profileApi={get:()=>request<StudyProfile>("/api/profile"),update:(body:Partial<StudyProfile>)=>request<StudyProfile>("/api/profile",{method:"PUT",body:JSON.stringify(body)})};
 export const goalsApi={list:()=>request<Goal[]>("/api/goals"),create:(body:{title:string;description?:string;category?:string;targetDate?:string})=>request<Goal>("/api/goals",{method:"POST",body:JSON.stringify(body)}),update:(id:string,body:Partial<Goal>)=>request<Goal>(`/api/goals/${id}`,{method:"PATCH",body:JSON.stringify(body)}),remove:(id:string)=>request<void>(`/api/goals/${id}`,{method:"DELETE"})};
@@ -49,6 +45,7 @@ export const resourcesApi={list:()=>request<ResourceItem[]>("/api/resources"),cr
 export const flashcardsApi={list:()=>request<Flashcard[]>("/api/flashcards"),toggleMastered:(id:string)=>request<Flashcard>("/api/flashcards",{method:"PATCH",body:JSON.stringify({id})})};
 export const technicalApi={getProgress:()=>request<TechnicalProgressNode[]>("/api/technical/progress"),toggleNode:(trackId:string,nodeId:string)=>request<{trackId:string;nodeId:string;status:string}>("/api/technical/toggle",{method:"POST",body:JSON.stringify({trackId,nodeId})})};
 export const learningApi={state:()=>request<LearningState>("/api/learning/state"),priorities:()=>request<{actions:LearningPriority[];generatedAt:string}>("/api/learning/priorities"),summary:()=>request<LearningSummary>("/api/learning/summary")};
+export const learningDiagnosticApi={questions:()=>request<{questions:EnglishDiagnosticQuestion[];total:number}>("/api/learning/diagnostic/english/questions"),submit:(answers:Record<string,number>)=>request<{assessment:EnglishDiagnosticResult;recommendation:string}>("/api/learning/diagnostic/english/submit",{method:"POST",body:JSON.stringify({answers})}),latest:()=>request<{score:number;level:string;result:EnglishDiagnosticResult;created_at:string}|null>("/api/learning/diagnostic/english/latest")};
 export const aiApi={ask:(prompt:string,mode:AIMode="general",provider:AIProvider="auto",historyOrLegacyInstruction:AIHistoryMessage[]|string=[]):Promise<AIResponse>=>{const history=Array.isArray(historyOrLegacyInstruction)?historyOrLegacyInstruction:[];return request<AIResponse>("/api/ai/ask",{method:"POST",body:JSON.stringify({prompt,mode,provider,history})})},recommendations:(mode:AIMode="general")=>request<AIRecommendation>("/api/ai/recommendations",{method:"POST",body:JSON.stringify({mode})}),dailyPlan:(mode:AIMode="general")=>request<AIDailyPlan>("/api/ai/daily-plan",{method:"POST",body:JSON.stringify({mode})}),updateDailyPlanAction:(body:{actionKey:string;actionTitle:string;category?:string;status:"completed"|"dismissed"})=>request<{action_key:string;action_title:string;category:string;status:"completed"|"dismissed";plan_date:string;updated_at:string}>("/api/ai/daily-plan/action",{method:"POST",body:JSON.stringify(body)}),dailyPlanProgress:()=>request<AIDailyPlanProgress>("/api/ai/daily-plan/progress")};
 export const geminiApi={ask:(prompt:string,mode?:AIMode,history?:AIHistoryMessage[])=>aiApi.ask(prompt,mode,"auto",history||[])};
 export const chatMessagesApi={list:()=>request<{id:string;mode:string;sender:string;text:string;created_at:string}[]>("/api/chat-messages"),create:(body:{mode?:string;sender:string;text:string;provider?:string})=>request<{id:string;mode:string;sender:string;text:string;created_at:string}>("/api/chat-messages",{method:"POST",body:JSON.stringify(body)}),clear:(mode?:string)=>request<void>("/api/chat-messages",{method:"DELETE",body:JSON.stringify({mode:mode||"english_coach"})})};
