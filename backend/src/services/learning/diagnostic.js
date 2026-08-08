@@ -9,11 +9,11 @@ const QUESTIONS = [
   { id: 'vocab_4', skill: 'vocabulary', level: 'B2', prompt: 'To "assess" a candidate means to:', options: ['Evaluate their abilities or performance', 'Invite them to a party', 'Ignore their application', 'Replace their documents'], answer: 0 },
 ];
 
-function getDiagnosticQuestions() {
+export function getDiagnosticQuestions() {
   return QUESTIONS.map(({ answer, ...publicQuestion }) => publicQuestion);
 }
 
-function scoreDiagnostic(answers = {}) {
+export function scoreDiagnostic(answers = {}) {
   const skillScores = {};
   let correct = 0;
   for (const q of QUESTIONS) {
@@ -37,5 +37,3 @@ function scoreDiagnostic(answers = {}) {
 
   return { score: percent, level, correct, total: QUESTIONS.length, skillScores, weaknesses };
 }
-
-module.exports = { getDiagnosticQuestions, scoreDiagnostic };
