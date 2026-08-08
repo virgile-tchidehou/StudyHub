@@ -49,31 +49,28 @@ CREATE TABLE IF NOT EXISTS gemini_chat_messages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(), user_id VARCHAR(255) NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
   mode VARCHAR(255) DEFAULT 'english_coach', provider VARCHAR(50) DEFAULT 'gemini', sender VARCHAR(50) NOT NULL, text TEXT NOT NULL, created_at TIMESTAMP DEFAULT NOW()
 );
-
--- IA proactive: track daily-plan action outcomes (completed/dismissed)
 CREATE TABLE IF NOT EXISTS ai_action_events (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id VARCHAR(255) NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
-  plan_date DATE NOT NULL DEFAULT CURRENT_DATE,
-  action_key VARCHAR(120) NOT NULL,
-  action_title VARCHAR(255) NOT NULL,
-  category VARCHAR(100) DEFAULT 'general',
-  status VARCHAR(20) NOT NULL CHECK (status IN ('completed', 'dismissed')),
-  source VARCHAR(50) NOT NULL DEFAULT 'daily_plan',
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(), user_id VARCHAR(255) NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+  plan_date DATE NOT NULL DEFAULT CURRENT_DATE, action_key VARCHAR(120) NOT NULL, action_title VARCHAR(255) NOT NULL,
+  category VARCHAR(100) DEFAULT 'general', status VARCHAR(20) NOT NULL CHECK (status IN ('completed', 'dismissed')),
+  source VARCHAR(50) NOT NULL DEFAULT 'daily_plan', created_at TIMESTAMP DEFAULT NOW(), updated_at TIMESTAMP DEFAULT NOW(),
   UNIQUE (user_id, plan_date, action_key)
 );
-
--- User Study Profile: no invented personal defaults. A new account starts empty and fills this during onboarding.
 CREATE TABLE IF NOT EXISTS user_profiles (
-  user_id VARCHAR(255) PRIMARY KEY REFERENCES "user"(id) ON DELETE CASCADE,
-  target_degree VARCHAR(100) DEFAULT NULL,
-  field_of_study VARCHAR(255) DEFAULT NULL,
-  target_countries TEXT[] DEFAULT '{}',
-  current_gpa VARCHAR(50) DEFAULT NULL,
-  target_ielts VARCHAR(50) DEFAULT NULL,
-  updated_at TIMESTAMP DEFAULT NOW()
+  user_id VARCHAR(255) PRIMARY KEY REFERENCES "user"(id) ON DELETE CASCADE, target_degree VARCHAR(100) DEFAULT NULL,
+  field_of_study VARCHAR(255) DEFAULT NULL, target_countries TEXT[] DEFAULT '{}', current_gpa VARCHAR(50) DEFAULT NULL,
+  target_ielts VARCHAR(50) DEFAULT NULL, updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Adaptive Learning Engine: versioned assessments are kept so progress can be measured over time.
+CREATE TABLE IF NOT EXISTS learning_assessments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id VARCHAR(255) NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+  assessment_type VARCHAR(50) NOT NULL,
+  score INTEGER NOT NULL CHECK (score >= 0 AND score <= 100),
+  level VARCHAR(20) DEFAULT NULL,
+  result JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS goals_user_id_idx ON goals(user_id);
@@ -87,3 +84,5 @@ CREATE INDEX IF NOT EXISTS gemini_chat_messages_user_id_idx ON gemini_chat_messa
 CREATE INDEX IF NOT EXISTS technical_progress_user_id_idx ON technical_progress(user_id);
 CREATE INDEX IF NOT EXISTS ai_action_events_user_id_idx ON ai_action_events(user_id);
 CREATE INDEX IF NOT EXISTS ai_action_events_plan_date_idx ON ai_action_events(plan_date);
+CREATE INDEX IF NOT EXISTS learning_assessments_user_id_idx ON learning_assessments(user_id);
+CREATE INDEX IF NOT EXISTS learning_assessments_type_created_idx ON learning_assessments(assessment_type, created_at DESC);
