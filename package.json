@@ -9,6 +9,9 @@
   "scripts": {
     "dev": "npm run dev --workspace=frontend",
     "dev:all": "node scripts/dev-all.mjs",
+    "db:migrate": "node scripts/db-migrate.mjs",
+    "db:migrate:learning": "node scripts/db-migrate.mjs database/migrations/002_learning_exercises.sql",
+    "db:migrate:align": "node scripts/db-migrate.mjs database/migrations/003_schema_alignment.sql",
     "build": "npm run build --workspace=frontend",
     "start": "npm run start --workspace=frontend",
     "lint": "npm run lint --workspace=frontend"

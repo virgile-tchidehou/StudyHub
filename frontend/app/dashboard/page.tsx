@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useLanguage } from "@/lib/language";
-import { goalsApi, universitiesApi, documentsApi, scholarshipsApi, aiApi, Goal, University, DocumentItem, Scholarship, AIDailyPlan } from "@/lib/api";
+import { goalsApi, universitiesApi, documentsApi, scholarshipsApi, aiApi, learningApi, Goal, University, DocumentItem, Scholarship, AIDailyPlan, LearningSummary } from "@/lib/api";
+import { PageHeader, StatCard } from "@/components/ui/PageHeader";
 import {
   Target,
   GraduationCap,
@@ -18,6 +18,9 @@ import {
   Zap,
   AlertCircle,
   XCircle,
+  BookOpen,
+  Code,
+  MessageSquare,
 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -27,17 +30,19 @@ export default function DashboardPage() {
   const [docs, setDocs] = useState<DocumentItem[]>([]);
   const [scholarships, setScholarships] = useState<Scholarship[]>([]);
   const [dailyPlan, setDailyPlan] = useState<AIDailyPlan | null>(null);
+  const [learning, setLearning] = useState<LearningSummary | null>(null);
   const [updatingActionKey, setUpdatingActionKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([goalsApi.list(), universitiesApi.list(), documentsApi.list(), scholarshipsApi.list(), aiApi.dailyPlan()])
-      .then(([g, u, d, s, plan]) => {
+    Promise.all([goalsApi.list(), universitiesApi.list(), documentsApi.list(), scholarshipsApi.list(), aiApi.dailyPlan(), learningApi.summary()])
+      .then(([g, u, d, s, plan, summary]) => {
         setGoals(g || []);
         setUnis(u || []);
         setDocs(d || []);
         setScholarships(s || []);
         setDailyPlan(plan || null);
+        setLearning(summary || null);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -96,21 +101,13 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <section className="relative overflow-hidden rounded-3xl border border-indigo-100 bg-gradient-to-r from-indigo-600 via-violet-600 to-sky-600 text-white p-6 sm:p-8 shadow-lg shadow-indigo-500/20">
-        <div className="absolute -top-16 -right-14 h-56 w-56 rounded-full bg-white/15 blur-2xl" />
-        <div className="absolute -bottom-16 -left-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
-        <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
-          <div className="flex items-center gap-4">
-            <div className="rounded-2xl bg-white/15 p-2.5 backdrop-blur-sm border border-white/20">
-              <Image src="/logo.png" alt="StudyHub" width={52} height={52} priority />
-            </div>
-            <div>
-              <h1 className="text-2xl font-extrabold tracking-tight">{t.welcomeBack}</h1>
-              <p className="text-sm text-indigo-100 mt-1 max-w-2xl">{t.pickModule}</p>
-            </div>
-          </div>
-
-          <div className="w-full lg:w-[340px] rounded-2xl border border-white/20 bg-white/10 backdrop-blur-sm p-4">
+      <PageHeader
+        gradient
+        badge="StudyHub"
+        title={t.welcomeBack}
+        description={t.pickModule}
+        actions={
+          <div className="w-full sm:w-[280px] rounded-2xl border border-white/20 bg-white/10 backdrop-blur-sm p-4">
             <div className="flex items-center justify-between text-xs mb-2">
               <span className="font-semibold text-indigo-100">Dossier readiness</span>
               <span className="font-bold text-white">{readinessScore}%</span>
@@ -118,29 +115,68 @@ export default function DashboardPage() {
             <div className="h-2 w-full rounded-full bg-white/30 overflow-hidden">
               <div className="h-full bg-white rounded-full transition-all duration-500" style={{ width: `${readinessScore}%` }} />
             </div>
-            <p className="mt-2 text-[11px] text-indigo-100">Suivi global de votre progression (objectifs, documents, universités, bourses).</p>
           </div>
-        </div>
-      </section>
+        }
+      />
 
       {/* Stats row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {stats.map((s) => {
-          const Icon = s.icon;
-          return (
-            <div key={s.label} className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 p-4 flex items-center gap-3 shadow-sm hover:border-indigo-300 transition">
-              <div className={`shrink-0 w-10 h-10 rounded-xl ${s.bg} flex items-center justify-center`}>
-                <Icon className={`w-5 h-5 ${s.color}`} />
-              </div>
-              <div>
-                <div className="text-2xl font-black text-slate-900">{s.value}</div>
-                <div className="text-[11px] text-slate-500 font-semibold">{s.label}</div>
-                <div className="text-[10px] text-slate-400 font-medium">{s.sub}</div>
-              </div>
-            </div>
-          );
-        })}
+        {stats.map((s) => (
+          <StatCard key={s.label} icon={s.icon} label={s.label} value={s.value} sub={s.sub} color={s.color} bg={s.bg} />
+        ))}
       </div>
+
+      {/* Adaptive Learning strip */}
+      {learning && (
+        <section className="card">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
+            <div>
+              <h2 className="font-bold text-slate-900 flex items-center gap-2 text-sm">
+                <Sparkles className="w-4 h-4 text-violet-600" /> {t.learningProgress}
+              </h2>
+              <p className="text-xs text-slate-500 mt-1">Overall: <strong className="text-indigo-600">{learning.overallProgress}%</strong></p>
+            </div>
+            <Link href="/dashboard/curriculum" className="btn btn-primary !text-xs !py-2">
+              <BookOpen className="w-3.5 h-3.5" /> {t.curriculum}
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+            <div className="rounded-xl border border-sky-100 bg-sky-50/50 p-4">
+              <div className="flex items-center gap-2 text-sky-700 text-xs font-bold mb-2"><MessageSquare className="w-3.5 h-3.5" /> English</div>
+              <p className="text-2xl font-black text-slate-900">
+                {learning.english.diagnostic?.score ?? learning.english.flashcards.masteryPercent}%
+              </p>
+              <p className="text-[10px] text-slate-500 mt-1">
+                {learning.english.status === "assessed" ? `Level ${learning.english.diagnostic?.level}` : t.takeDiagnostic}
+              </p>
+            </div>
+            <div className="rounded-xl border border-violet-100 bg-violet-50/50 p-4">
+              <div className="flex items-center gap-2 text-violet-700 text-xs font-bold mb-2"><Code className="w-3.5 h-3.5" /> Technical</div>
+              <p className="text-2xl font-black text-slate-900">
+                {learning.technical.diagnostic?.score ?? learning.technical.progressPercent}%
+              </p>
+              <p className="text-[10px] text-slate-500 mt-1">
+                {learning.technical.status === "assessed" ? `Level ${learning.technical.diagnostic?.level}` : t.takeDiagnostic}
+              </p>
+            </div>
+            <div className="rounded-xl border border-emerald-100 bg-emerald-50/50 p-4">
+              <div className="flex items-center gap-2 text-emerald-700 text-xs font-bold mb-2"><Target className="w-3.5 h-3.5" /> Goals</div>
+              <p className="text-2xl font-black text-slate-900">{learning.productivity.averageGoalProgress}%</p>
+              <p className="text-[10px] text-slate-500 mt-1">{learning.productivity.goals.length} active goals</p>
+            </div>
+          </div>
+          {learning.nextActions.length > 0 && (
+            <ul className="space-y-2">
+              {learning.nextActions.slice(0, 3).map((action) => (
+                <li key={action.title} className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 border border-slate-100 px-3 py-2.5 text-xs">
+                  <span className="font-semibold text-slate-800">{action.title}</span>
+                  <span className="chip shrink-0">{action.durationMinutes} min</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
 
       {/* Countdown Warning Strip */}
       <div className="bg-amber-50/80 border border-amber-200/80 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-900">

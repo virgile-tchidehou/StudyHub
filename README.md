@@ -11,7 +11,7 @@
 ![Database](https://img.shields.io/badge/Database-PostgreSQL-316192?logo=postgresql)
 ![Auth](https://img.shields.io/badge/Auth-Better%20Auth-FF6B6B)
 
-**AI • Education • Productivity • Scholarships • English Learning**
+**AI • Education • Productivity • Scholarships • English Learning • Adaptive Learning**
 
 </div>
 
@@ -20,7 +20,19 @@
 # 📖 Overview
 
 StudyHub is an AI-powered web platform designed to help students prepare for international studies.
-Instead of using multiple applications to organize documents, improve English, track scholarships and manage university applications, StudyHub brings everything together into a single intelligent workspace.
+Instead of juggling Google Drive, Notion, Duolingo, ChatGPT, calendars, and university websites, StudyHub brings everything into a single intelligent workspace:
+
+- Application tracking (goals, universities, documents, scholarships)
+- AI English Coach and English diagnostic
+- AI Mentor (admission, interview, strategy)
+- Technical learning roadmaps (Embedded Systems, IoT, Robotics)
+- Daily AI plan with action tracking
+- Adaptive Learning Engine (state, priorities, progression)
+- Planner, resources library, and analytics
+
+**Slogan:** *One Platform. One Goal. Your Future.*
+
+Product vision: [`docs/01-product-vision.md`](docs/01-product-vision.md)
 
 ---
 
@@ -30,21 +42,34 @@ Instead of using multiple applications to organize documents, improve English, t
                         StudyHub Platform
 
                      ┌────────────────────┐
-                     │   Next.js App      │   Frontend (UI, auth client, dashboard)
+                     │   Next.js App      │   Frontend (UI, dashboard, i18n FR/EN)
                      │   (port 3000)      │
                      └─────────┬──────────┘
-                               │  REST API + HttpOnly cookie
-                               │  /api/auth/*  /api/goals/*  /api/universities/*  /api/documents/*
+                               │  /api/* proxied (same-origin cookies)
                      ┌─────────▼──────────┐
-                     │   Node.js API      │   Backend (Express, ESM, no build step)
+                     │   Express API      │   Backend (ESM, no build step)
                      │   (port 8000)      │
                      └─────────┬──────────┘
                                │
             ┌──────────────────┼───────────────────┐
             ▼                  ▼                    ▼
-     PostgreSQL           Better Auth            File Storage
-     studyhub_db        (email + password)      (future integration)
+     PostgreSQL           Better Auth         Gemini / Groq
+     studyhub_db        (email + password)      (AI providers)
 ```
+
+### StudyHub AI layer
+
+```
+StudyHub AI
+├── English Coach        (speaking, writing, listening, vocabulary)
+├── AI Mentor            (admission, interview, strategy)
+├── Technical Mentor     (Embedded, IoT, Robotics, C/C++)
+└── Personal Context  →  Daily Plan  →  Recommendations
+         ↑
+   Learning Engine (state, priorities, diagnostic)
+```
+
+All API calls go through the Express backend. The Next.js app proxies `/api/*` to the backend so session cookies work on the same origin (`localhost:3000`).
 
 ---
 
@@ -52,16 +77,17 @@ Instead of using multiple applications to organize documents, improve English, t
 
 | Layer     | Tech                                            |
 |-----------|-------------------------------------------------|
-| Frontend  | Next.js 14 (App Router), TypeScript, Tailwind  |
-| Backend   | Node.js (ESM), Express 4                        |
-| Auth      | Better Auth (email + password)                  |
-| Database  | PostgreSQL 17 (`studyhub_db`)                   |
-| DB driver | `pg`                                            |
-| Storage   | Supabase Storage (planned)                      |
-| AI        | Gemini / Groq (planned)                         |
+| Monorepo  | npm workspaces (`frontend` + `backend`)       |
+| Frontend  | Next.js 14 (App Router), React 18, TypeScript, Tailwind CSS |
+| Backend   | Node.js ≥ 18 (ESM), Express 4                   |
+| Auth      | Better Auth (email + password, HttpOnly cookie) |
+| Database  | PostgreSQL 17 (`studyhub_db`), driver `pg`      |
+| AI        | Google Gemini + Groq (auto fallback)            |
+| Uploads   | Multer → local `uploads/` directory             |
+| i18n      | Custom FR/EN dictionary                         |
 | Deploy    | Frontend: Vercel · Backend: Render · DB: Render |
 
-> **Note:** The backend is plain Node.js ESM — there is **no TypeScript build step**. You run it directly with `node server.js`.
+> **Note:** The backend is plain Node.js ESM — there is **no TypeScript build step** and **no ORM**. SQL schemas are applied directly with `psql`.
 
 ---
 
@@ -69,40 +95,32 @@ Instead of using multiple applications to organize documents, improve English, t
 
 ```
 studyhub/
-├── README.md                      # This file
-├── .env                          # Shared secrets (root) — DATABASE_URL, BETTER_AUTH_SECRET, ...
-├── .env.example                  # Template
+├── README.md
+├── .env.example                  # Shared env template (root)
+├── package.json                  # npm workspaces + dev:all script
+├── scripts/dev-all.mjs           # Starts backend + frontend together
 ├── database/
-│   └── schema.sql                # Business tables (goals, universities, documents)
+│   ├── schema.sql                # Business tables (13 tables)
+│   └── migrations/               # Incremental SQL migrations
+├── docs/
+│   └── 01-product-vision.md
 ├── backend/
-│   ├── server.js                 # Entry point (Express app)
-│   ├── package.json
-│   ├── README.md
+│   ├── server.js                 # Express entry point
 │   └── src/
-│       ├── config/
-│       │   ├── env.js            # Loads + exposes env vars (root .env)
-│       │   ├── database.js       # pg Pool + health check
-│       │   ├── auth.js           # Better Auth instance
-│       │   └── auth-schema.sql   # Better Auth SQL (apply to DB)
-│       ├── middleware/
-│       │   └── auth.js           # requireAuth + getSessionUser helpers
-│       └── routes/
-│           ├── auth.js           # Better Auth handler (/api/auth/*)
-│           ├── goals.js          # /api/goals (protected)
-│           ├── universities.js   # /api/universities (protected)
-│           └── documents.js      # /api/documents (protected)
+│       ├── config/               # env, database, auth, auth-schema.sql
+│       ├── middleware/auth.js    # requireAuth helpers
+│       ├── routes/               # 16 API route modules
+│       └── services/learning/    # Learning Engine + diagnostic
 └── frontend/
     ├── app/
-    │   ├── (auth)/login/         # Login / sign-up page
-    │   ├── (dashboard)/          # Goals, Universities, Documents, Planner...
-    │   ├── login/                # (kept for redirect compatibility)
+    │   ├── (auth)/login/         # Login / sign-up
+    │   ├── dashboard/            # 12 dashboard modules
     │   ├── layout.tsx
-    │   └── page.tsx              # redirects to /login
+    │   └── page.tsx              # Landing page
     ├── components/
-    │   ├── auth/LoginForm.tsx
-    │   └── dashboard/DashboardClient.tsx
-    ├── lib/auth-client.ts        # Fetch wrapper for Better Auth endpoints
-    └── middleware.ts             # Route protection via session cookie
+    ├── lib/                      # api.ts, auth-client.ts, i18n
+    ├── middleware.ts             # Route protection
+    └── next.config.js            # API proxy rewrites
 ```
 
 ---
@@ -111,16 +129,16 @@ studyhub/
 
 ## 1. Prerequisites
 
-- Node.js >= 18
-- PostgreSQL 17 (a `studyhub_db` database)
-- The root `.env` file (copy from `.env.example`)
+- Node.js ≥ 18
+- PostgreSQL 17 (database `studyhub_db`)
+- Root `.env` file (copy from `.env.example`)
 
 ## 2. Environment
 
-Root `.env` (shared by backend and frontend):
+Create `.env` at the project root:
 
 ```env
-DATABASE_URL="postgresql://postgres:PASSWORD@localhost:5432/studyhub_db?schema=public"
+DATABASE_URL="postgresql://postgres:PASSWORD@localhost:5432/studyhub_db"
 BETTER_AUTH_SECRET="<64-char-random-string>"
 BETTER_AUTH_URL="http://localhost:8000"
 NEXT_PUBLIC_BETTER_AUTH_URL="http://localhost:8000"
@@ -128,9 +146,15 @@ NEXT_PUBLIC_API_URL="http://localhost:8000"
 FRONTEND_URL="http://localhost:3000"
 PORT=8000
 NODE_ENV="development"
+
+# AI (optional but required for AI features)
+GEMINI_API_KEY="your_gemini_key"
+GEMINI_MODEL="gemini-2.0-flash"
+GROQ_API_KEY="your_groq_key"
+GROQ_MODEL="llama-3.3-70b-versatile"
 ```
 
-Generate a secret with:
+Generate a secret:
 
 ```bash
 openssl rand -base64 32
@@ -138,33 +162,61 @@ openssl rand -base64 32
 
 ## 3. Database
 
-```bash
-# Better Auth tables (user, session, account, verification)
-psql -d studyhub_db -f backend/src/config/auth-schema.sql
+Uses `DATABASE_URL` from your root `.env` automatically:
 
-# Business tables (goals, universities, documents)
-psql -d studyhub_db -f database/schema.sql
+```bash
+# Full schema + all migrations
+npm run db:migrate
+
+# Single migration (e.g. adaptive curriculum table)
+npm run db:migrate:learning
 ```
 
-## 4. Backend
+Manual equivalent:
 
 ```bash
-cd backend
+psql "$DATABASE_URL" -f backend/src/config/auth-schema.sql
+psql "$DATABASE_URL" -f database/schema.sql
+```
+
+## 4. Install & run
+
+From the project root:
+
+```bash
 npm install
-npm run dev          # or: npm start  (node server.js)
+npm run dev:all          # backend :8000 + frontend :3000
 ```
 
-Listens on `http://localhost:8000`.
-
-## 5. Frontend
+Or run separately:
 
 ```bash
-cd frontend
-npm install
-npm run dev
+cd backend && npm run dev
+cd frontend && npm run dev
 ```
 
-Open `http://localhost:3000` — you are redirected to `/login`.
+Open `http://localhost:3000` — landing page or `/login` to sign in.
+
+---
+
+# 🧩 Dashboard Modules
+
+| Module | Route | Status |
+|--------|-------|--------|
+| Dashboard | `/dashboard` | ✅ |
+| Goal Tracker | `/dashboard/goals` | ✅ |
+| Universities | `/dashboard/universities` | ✅ |
+| Scholarships | `/dashboard/scholarships` | ✅ |
+| Documents | `/dashboard/documents` | ✅ |
+| English Coach | `/dashboard/english-coach` | ✅ |
+| English Diagnostic | `/dashboard/english-diagnostic` | ✅ |
+| Technical Diagnostic | `/dashboard/technical-diagnostic` | ✅ |
+| Adaptive Curriculum | `/dashboard/curriculum` | ✅ |
+| AI Mentor | `/dashboard/ai-mentor` | ✅ |
+| Technical Learning | `/dashboard/technical-learning` | ✅ |
+| Planner | `/dashboard/planner` | ✅ |
+| Resources | `/dashboard/resources` | ✅ |
+| Analytics | `/dashboard/analytics` | ✅ |
 
 ---
 
@@ -174,58 +226,105 @@ All business routes require a valid `better-auth.session_token` cookie and are s
 
 ## Auth (Better Auth)
 
-| Method | Path                          | Description              |
-|--------|-------------------------------|--------------------------|
-| POST   | `/api/auth/sign-up/email`     | Register with email      |
-| POST   | `/api/auth/sign-in/email`     | Login with email         |
-| POST   | `/api/auth/sign-out`          | Logout                   |
-| GET    | `/api/auth/get-session`       | Current session          |
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/auth/sign-up/email` | Register |
+| POST | `/api/auth/sign-in/email` | Login |
+| POST | `/api/auth/sign-out` | Logout |
+| GET | `/api/auth/get-session` | Current session |
 
-## Goals
+## Core modules
 
-| Method | Path             | Description            |
-|--------|------------------|------------------------|
-| GET    | `/api/goals`     | List user's goals      |
-| POST   | `/api/goals`     | Create a goal          |
-| PATCH  | `/api/goals/:id` | Update (progress, ...) |
-| DELETE | `/api/goals/:id` | Delete a goal          |
+| Prefix | Description |
+|--------|-------------|
+| `/api/goals` | CRUD goals |
+| `/api/universities` | CRUD universities |
+| `/api/documents` | CRUD documents + file upload |
+| `/api/scholarships` | CRUD scholarships + AI search |
+| `/api/planner` | Daily tasks |
+| `/api/resources` | Resource library |
+| `/api/flashcards` | Vocabulary flashcards |
+| `/api/technical` | Technical progress tracking |
+| `/api/profile` | Student profile (no fake defaults) |
 
-## Universities
+## AI
 
-| Method | Path                  | Description            |
-|--------|-----------------------|------------------------|
-| GET    | `/api/universities`   | List tracked unis      |
-| POST   | `/api/universities`   | Add a university       |
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/ai/ask` | Chat with context-aware AI |
+| POST | `/api/ai/recommendations` | Personalized recommendations |
+| POST | `/api/ai/daily-plan` | Generate daily plan |
+| POST | `/api/ai/daily-plan/action` | Mark action completed/dismissed |
+| GET | `/api/ai/daily-plan/progress` | Today's plan progress |
+| GET/POST/DELETE | `/api/chat-messages` | Conversation history |
 
-## Documents
+## Adaptive Learning Engine
 
-| Method | Path               | Description            |
-|--------|--------------------|------------------------|
-| GET    | `/api/documents`   | List user's documents  |
-| POST   | `/api/documents`   | Add a document record  |
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/learning/state` | Full learning state |
+| GET | `/api/learning/priorities` | Personalized priority actions |
+| GET | `/api/learning/summary` | Progress summary |
+| GET | `/api/learning/diagnostic/english/questions` | Diagnostic questions |
+| POST | `/api/learning/diagnostic/english/submit` | Submit answers |
+| GET | `/api/learning/diagnostic/english/latest` | Latest assessment |
+| GET | `/api/learning/diagnostic/technical/tracks` | Available technical tracks |
+| GET | `/api/learning/diagnostic/technical/questions?track=` | Technical questions |
+| POST | `/api/learning/diagnostic/technical/submit` | Submit technical answers |
+| GET | `/api/learning/diagnostic/technical/latest?track=` | Latest technical assessment |
+| GET | `/api/learning/curriculum` | Active curriculum + focus areas |
+| POST | `/api/learning/curriculum/generate` | Generate exercises from weaknesses |
+| PATCH | `/api/learning/curriculum/:id` | Complete or skip an exercise |
+
+## Health
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/health` | Server + database health check |
 
 ---
 
-# 🧩 Modules (Roadmap)
+# 🗄️ Database Tables
 
-| Phase | Module                        | Status        |
-|-------|-------------------------------|---------------|
-| 1     | Authentication                | ✅ Done       |
-| 1     | Dashboard                     | ✅ Done       |
-| 1     | Goal Tracker                  | 🟡 In progress|
-| 1     | Document Manager              | 🟡 In progress|
-| 2     | Universities & Scholarships   | 🟡 In progress|
-| 2     | Planner                       | ⏳ Planned    |
-| 3     | AI English Coach              | ⏳ Planned    |
-| 3     | AI Mentor                     | ⏳ Planned    |
-| 4     | Technical Learning            | ⏳ Planned    |
-| 4     | Analytics                     | ⏳ Planned    |
+```
+user (Better Auth)
+ ├── user_profiles
+ ├── goals
+ ├── universities
+ ├── documents
+ ├── scholarships
+ ├── planner_tasks
+ ├── resources
+ ├── flashcards
+ ├── technical_progress
+ ├── gemini_chat_messages
+ ├── ai_action_events
+ └── learning_assessments
+```
+
+---
+
+# 🛣 Roadmap
+
+| Area | Status | Notes |
+|------|--------|-------|
+| Auth + PostgreSQL | ✅ Done | Better Auth + pg |
+| Core CRUD modules | ✅ Done | Goals, universities, documents, … |
+| AI Mentor + Coach | ✅ Done | Gemini/Groq, context, memory |
+| Daily Plan + tracking | ✅ Done | `ai_action_events` |
+| Learning Engine | ✅ Done | State, priorities, summary |
+| English Diagnostic | ✅ Done | Persistent assessments |
+| Technical Diagnostic | ✅ Done | Skill-based Embedded + AI tracks |
+| Adaptive Curriculum | ✅ Done | Template + AI exercises from weaknesses |
+| Scholarship ingestion | ⏳ Planned | Official sources, not LLM-only |
+| Automated tests | ⏳ Planned | — |
+| Cloud file storage | ⏳ Planned | Supabase or equivalent |
 
 ---
 
 # 📄 License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License — see [LICENSE](LICENSE).
 
 ---
 

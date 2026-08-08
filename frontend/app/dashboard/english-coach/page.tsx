@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLanguage } from "@/lib/language";
 import { flashcardsApi, aiApi, chatMessagesApi, Flashcard } from "@/lib/api";
-import Image from "next/image";
+import { PageHeader } from "@/components/ui/PageHeader";
 import {
   MessageSquare,
   Sparkles,
@@ -233,44 +233,28 @@ export default function EnglishCoachPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="border-b border-slate-200 bg-white p-6 rounded-2xl shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold uppercase tracking-wider mb-2">
-              <Sparkles className="w-3.5 h-3.5" /> Module 4 — AI Coach & Audio TTS
-            </div>
-            <h1 className="text-2xl font-extrabold text-slate-900">{t.englishCoach}</h1>
-            <p className="text-slate-600 text-sm mt-1">{t.englishCoachDesc}</p>
+      <PageHeader
+        badge="AI Coach & TTS"
+        title={t.englishCoach}
+        description={t.englishCoachDesc}
+        actions={
+          <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl text-xs font-semibold text-slate-700">
+            <Zap className="w-4 h-4 text-violet-600 ml-1" />
+            {(["auto", "gemini", "groq"] as const).map((p) => (
+              <button
+                key={p}
+                onClick={() => setAiProvider(p)}
+                className={`px-2.5 py-1 rounded-lg transition capitalize ${aiProvider === p ? "bg-white text-indigo-600 shadow-xs" : "hover:text-slate-900"}`}
+              >
+                {p}
+              </button>
+            ))}
           </div>
+        }
+      />
 
-          {/* AI Provider Switcher */}
-          <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl text-xs font-semibold text-slate-700 shrink-0">
-            <Zap className="w-4 h-4 text-purple-600 ml-1" />
-            <span>Moteur IA :</span>
-            <button
-              onClick={() => setAiProvider("auto")}
-              className={`px-2.5 py-1 rounded-lg transition ${aiProvider === "auto" ? "bg-white text-blue-600 shadow-xs" : "hover:text-slate-900"}`}
-            >
-              Auto
-            </button>
-            <button
-              onClick={() => setAiProvider("gemini")}
-              className={`px-2.5 py-1 rounded-lg transition ${aiProvider === "gemini" ? "bg-white text-blue-600 shadow-xs" : "hover:text-slate-900"}`}
-            >
-              Gemini 3.6
-            </button>
-            <button
-              onClick={() => setAiProvider("groq")}
-              className={`px-2.5 py-1 rounded-lg transition ${aiProvider === "groq" ? "bg-white text-purple-600 shadow-xs" : "hover:text-slate-900"}`}
-            >
-              Groq Llama 3
-            </button>
-          </div>
-        </div>
-
-        {/* Tab Navigation */}
-        <div className="mt-4 flex flex-wrap items-center gap-2 bg-slate-100 p-1 rounded-xl text-xs font-semibold">
+      <div className="card !p-2">
+        <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
           <button
             onClick={() => setActiveTab("chat")}
             className={`px-3 py-2 rounded-lg transition ${
@@ -313,8 +297,6 @@ export default function EnglishCoachPage() {
           </button>
         </div>
       </div>
-
-      {/* Tab Content 1: Chat & Speaking */}
       {activeTab === "chat" && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-xs flex flex-col h-[520px]">

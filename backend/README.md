@@ -1,73 +1,96 @@
 # StudyHub Backend
 
-Express.js API backend for the StudyHub platform, written in plain Node.js (ESM, no build step).
+Express.js API backend for the StudyHub platform — plain Node.js ESM, no build step, no ORM.
 
 ## Stack
 
-- Node.js >= 18
+- Node.js ≥ 18
 - Express 4
-- PostgreSQL (via `pg`)
+- PostgreSQL (via `pg` Pool)
 - Better Auth (email + password)
-- dotenv
+- Google Gemini + Groq (AI providers)
+- Multer (file uploads → `../uploads/`)
 
 ## Getting started
 
+Configuration is read from the **root** `.env` (shared with the frontend):
+
+`DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `FRONTEND_URL`, `PORT`, `GEMINI_API_KEY`, `GROQ_API_KEY`
+
 ```bash
+# From project root
 npm install
-npm run dev        # or: npm start
+npm run dev:all
+
+# Or backend only
+cd backend
+npm run dev        # node server.js
 ```
 
-The server reads configuration from the **root** `.env` (project root), shared with the frontend:
-`DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `FRONTEND_URL`, `PORT`.
-
-It listens on `http://localhost:8000` by default.
+Default: `http://localhost:8000`
 
 ## Structure
 
 ```
 backend/
-├── server.js                 # Entry point (Express app)
-├── src/
-│   ├── config/
-│   │   ├── env.js            # Loads + exposes env vars (root .env)
-│   │   ├── database.js       # pg Pool + health check
-│   │   ├── auth.js           # Better Auth instance
-│   │   └── auth-schema.sql   # Better Auth SQL schema (apply to DB)
-│   ├── middleware/
-│   │   └── auth.js           # requireAuth + getSessionUser helpers
-│   └── routes/
-│       ├── auth.js           # Better Auth handler (/api/auth/*)
-│       ├── goals.js          # /api/goals (protected)
-│       ├── universities.js   # /api/universities (protected)
-│       └── documents.js      # /api/documents (protected)
-└── database/
-    └── schema.sql            # Business tables (goals, universities, documents)
+├── server.js
+└── src/
+    ├── config/
+    │   ├── env.js
+    │   ├── database.js
+    │   ├── auth.js
+    │   └── auth-schema.sql
+    ├── middleware/
+    │   └── auth.js
+    ├── routes/
+    │   ├── auth.js
+    │   ├── goals.js
+    │   ├── universities.js
+    │   ├── documents.js
+    │   ├── scholarships.js
+    │   ├── planner.js
+    │   ├── resources.js
+    │   ├── flashcards.js
+    │   ├── technical.js
+    │   ├── profile.js
+    │   ├── ai.js
+    │   ├── gemini.js
+    │   ├── chat-messages.js
+    │   ├── learning.js
+    │   └── learning-diagnostic.js
+    └── services/learning/
+        ├── context.js       # Learning Engine (state, priorities)
+        └── diagnostic.js    # English diagnostic engine
+        └── technical-diagnostic.js  # Technical skill diagnostic
 ```
 
 ## Database setup
 
-1. Create the database (e.g. `studyhub_db`).
-2. Apply the schemas:
+```bash
+psql -d studyhub_db -f backend/src/config/auth-schema.sql
+psql -d studyhub_db -f database/schema.sql
+```
+
+For existing databases:
 
 ```bash
-# Better Auth tables (user, session, account, verification)
-psql -d studyhub_db -f backend/src/config/auth-schema.sql
-
-# Business tables (goals, universities, documents)
-psql -d studyhub_db -f database/schema.sql
+psql -d studyhub_db -f database/migrations/001_user_profile_no_fake_defaults.sql
 ```
 
 ## Auth
 
-- Endpoints are served by Better Auth under `/api/auth/*`
-  - `POST /api/auth/sign-up/email`
-  - `POST /api/auth/sign-in/email`
-  - `POST /api/auth/sign-out`
-  - `GET  /api/auth/get-session`
-- Session is stored in the `better-auth.session_token` cookie (HttpOnly).
-- Business routes (`/api/goals`, `/api/universities`, `/api/documents`) require a valid session
-  and are scoped per `user_id`.
+- Better Auth under `/api/auth/*`
+- Session cookie: `better-auth.session_token` (HttpOnly)
+- Business routes use `requireAuth` middleware and scope data by `user_id`
 
-## Health check
+## Key endpoints
 
-`GET /health` returns `{ status, timestamp, database, dbName }`.
+| Area | Prefix |
+|------|--------|
+| Core CRUD | `/api/goals`, `/api/universities`, `/api/documents`, … |
+| AI | `/api/ai/ask`, `/api/ai/recommendations`, `/api/ai/daily-plan` |
+| Learning | `/api/learning/state`, `/api/learning/priorities`, `/api/learning/summary` |
+| Diagnostic | `/api/learning/diagnostic/english/*`, `/api/learning/diagnostic/technical/*` |
+| Health | `GET /health` |
+
+See the [root README](../README.md) for the full API reference.

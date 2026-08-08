@@ -72,6 +72,9 @@ export type Dict = {
   // New Modules
   englishCoach: string;
   englishCoachDesc: string;
+  englishDiagnostic: string;
+  technicalDiagnostic: string;
+  technicalDiagnosticDesc: string;
   aiMentor: string;
   aiMentorDesc: string;
   technicalLearning: string;
@@ -84,6 +87,16 @@ export type Dict = {
   resourcesDesc: string;
   analytics: string;
   analyticsDesc: string;
+  curriculum: string;
+  curriculumDesc: string;
+  generateExercises: string;
+  focusAreas: string;
+  pendingExercises: string;
+  noExercises: string;
+  noExercisesDesc: string;
+  exerciseHistory: string;
+  learningProgress: string;
+  takeDiagnostic: string;
 };
 
 const fr: Dict = {
@@ -155,6 +168,9 @@ const fr: Dict = {
 
   englishCoach: "Coach Anglais IA",
   englishCoachDesc: "Améliorez votre expression orale, grammaire et vocabulaire IELTS/TOEFL.",
+  englishDiagnostic: "Diagnostic Anglais",
+  technicalDiagnostic: "Diagnostic Technique",
+  technicalDiagnosticDesc: "Évaluez vos compétences en systèmes embarqués ou IA pour construire un parcours personnalisé.",
   aiMentor: "Mentor IA",
   aiMentorDesc: "Simulation d'entretiens Campus France / DAAD et révision de SOP.",
   technicalLearning: "Roadmaps Techniques",
@@ -167,6 +183,16 @@ const fr: Dict = {
   resourcesDesc: "Guides officiels, modèles de SOP, MOOCs et ressources recommandées.",
   analytics: "Statistiques Globales",
   analyticsDesc: "Vue synthétique de votre progression académique et linguistique.",
+  curriculum: "Curriculum Adaptatif",
+  curriculumDesc: "Exercices personnalisés générés à partir de vos diagnostics et faiblesses détectées.",
+  generateExercises: "Générer des exercices",
+  focusAreas: "Axes de progression",
+  pendingExercises: "Exercices à faire",
+  noExercises: "Aucun exercice pour l'instant",
+  noExercisesDesc: "Passez un diagnostic puis générez votre premier curriculum personnalisé.",
+  exerciseHistory: "Historique",
+  learningProgress: "Progression Adaptive Learning",
+  takeDiagnostic: "Passer un diagnostic",
 };
 
 const en: Dict = {
@@ -238,6 +264,9 @@ const en: Dict = {
 
   englishCoach: "AI English Coach",
   englishCoachDesc: "Practice IELTS/TOEFL speaking, grammar, and vocabulary.",
+  englishDiagnostic: "English Diagnostic",
+  technicalDiagnostic: "Technical Diagnostic",
+  technicalDiagnosticDesc: "Assess your Embedded Systems or AI skills to build a personalised learning path.",
   aiMentor: "AI Mentor",
   aiMentorDesc: "Simulate Campus France / DAAD interviews and review SOPs.",
   technicalLearning: "Technical Roadmaps",
@@ -250,6 +279,16 @@ const en: Dict = {
   resourcesDesc: "Official guides, SOP templates, MOOCs and study materials.",
   analytics: "Global Analytics",
   analyticsDesc: "Synthesized view of your academic and language readiness.",
+  curriculum: "Adaptive Curriculum",
+  curriculumDesc: "Personalised exercises generated from your diagnostics and detected weaknesses.",
+  generateExercises: "Generate exercises",
+  focusAreas: "Focus areas",
+  pendingExercises: "Pending exercises",
+  noExercises: "No exercises yet",
+  noExercisesDesc: "Take a diagnostic, then generate your first personalised curriculum.",
+  exerciseHistory: "History",
+  learningProgress: "Adaptive Learning Progress",
+  takeDiagnostic: "Take a diagnostic",
 };
 
 

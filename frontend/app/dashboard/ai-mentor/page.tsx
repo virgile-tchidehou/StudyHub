@@ -4,10 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import { useLanguage } from "@/lib/language";
 import { aiApi, chatMessagesApi, profileApi, StudyProfile, AIHistoryMessage, AIMode, AIRecommendation, AIDailyPlan } from "@/lib/api";
 import Image from "next/image";
-import { Bot, Send, ShieldCheck, RefreshCw, Zap, UserRound, BrainCircuit } from "lucide-react";
+import { Bot, Send, ShieldCheck, RefreshCw, Zap, UserRound, BrainCircuit, AlertTriangle } from "lucide-react";
+import { formatAiProvider } from "@/lib/utils";
 
 type Mode = "interview" | "general" | "technical_mentor";
-type Message = { sender: "user" | "ai"; text: string; provider?: string };
+type Message = { sender: "user" | "ai"; text: string; provider?: string; notice?: string };
 
 const MODE_INFO: Record<Mode, { label: string; title: string; description: string; icon: string }> = {
   interview: {
@@ -120,7 +121,7 @@ export default function AiMentorPage() {
 
     try {
       const res = await aiApi.ask(text, activeMode as AIMode, aiProvider, nextHistory);
-      const aiMessage: Message = { sender: "ai", text: res.text, provider: res.provider };
+      const aiMessage: Message = { sender: "ai", text: res.text, provider: res.provider, notice: res.notice };
       setMessages((prev) => [...prev, aiMessage]);
       const assistantMessage: AIHistoryMessage = { role: "assistant", content: res.text };
       setHistory([...nextHistory, assistantMessage].slice(-12));
@@ -194,8 +195,16 @@ export default function AiMentorPage() {
             {messages.map((m, idx) => (
               <div key={`${idx}-${m.sender}`} className={`flex ${m.sender === "user" ? "justify-end" : "justify-start"}`}>
                 <div className={`max-w-[85%] p-4 rounded-2xl text-xs sm:text-sm leading-relaxed ${m.sender === "user" ? "bg-purple-700 text-white rounded-br-none" : "bg-slate-100 text-slate-800 rounded-bl-none border border-slate-200/60"}`}>
+                  {m.notice && (
+                    <div className="mb-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-900">
+                      <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                      <span>{m.notice}</span>
+                    </div>
+                  )}
                   <p className="whitespace-pre-wrap">{m.text}</p>
-                  {m.provider && <div className="mt-2 text-[10px] opacity-60">{m.provider}</div>}
+                  {m.provider && m.sender === "ai" && (
+                    <div className="mt-2 text-[10px] opacity-60">{formatAiProvider(m.provider)}</div>
+                  )}
                 </div>
               </div>
             ))}

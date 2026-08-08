@@ -49,5 +49,8 @@ npm-debug.log*
 # Runtime
 .node/
 
+# Uploads (document files stored locally)
+uploads/
+
 # Misc
 *.log

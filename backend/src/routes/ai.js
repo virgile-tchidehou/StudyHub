@@ -216,11 +216,64 @@ async function callGroq(prompt, mode, systemInstruction) {
   return { text, provider: 'groq' };
 }
 
-function getOfflineAdvice(mode) {
-  if (mode === 'english_coach') return `Let's practice English together.\n\nTell me about your academic background and why you want to study abroad.\n\nAnswer in English in 4–6 sentences. I will correct your grammar, vocabulary and clarity.`;
-  if (mode === 'interview') return `Interview practice:\n\nWhy did you choose your field of study, and how does it fit into your long-term career plan?\n\nAnswer naturally in 60–90 seconds. I will evaluate your response.`;
-  if (mode === 'technical_mentor') return `Technical practice:\n\nChoose one topic (C/C++, embedded Linux, RTOS, MQTT, ROS2 or IoT) and tell me your current level. I will build a short learning path and give you a practical exercise.`;
-  return `I'm ready to help you plan your international-study journey. Tell me your current objective, and we will turn it into concrete next steps.`;
+function getOfflineAdvice(mode, userPrompt = '') {
+  const greeting = userPrompt
+    ? `\n\nVous avez écrit : « ${userPrompt.slice(0, 200)} »\n`
+    : '\n';
+
+  if (mode === 'english_coach') {
+    return `Continuons en mode hors ligne.${greeting}\nRépondez en anglais en 4–6 phrases : présentez votre parcours académique et votre projet d'études à l'étranger. Quand l'IA sera de nouveau disponible, je corrigerai votre grammaire et votre vocabulaire.`;
+  }
+  if (mode === 'interview') {
+    return `Entraînement entretien (mode hors ligne).${greeting}\nStructurez votre réponse en 60–90 secondes :\n1. Présentation courte\n2. Projet académique\n3. Lien avec votre objectif de carrière\n\nQuestion : Why did you choose your field of study, and how does it fit into your long-term career plan?`;
+  }
+  if (mode === 'technical_mentor') {
+    return `Mentor technique (mode hors ligne).${greeting}\nIndiquez un sujet (C/C++, Linux embarqué, RTOS, MQTT, ROS2, IoT) et votre niveau actuel. Je vous proposerai un mini-plan d'étude et un exercice pratique.`;
+  }
+  return `Je suis disponible en mode hors ligne.${greeting}\nDécrivez votre objectif actuel (Master, pays, délais) et nous le transformerons en prochaines actions concrètes.`;
+}
+
+function buildOfflineNotice(failures = []) {
+  if (!env.geminiApiKey && !env.groqApiKey) {
+    return 'Aucune clé API configurée. Ajoutez GEMINI_API_KEY ou GROQ_API_KEY dans votre fichier .env.';
+  }
+  if (!failures.length) {
+    return 'Les services IA sont temporairement indisponibles. Mode coaching hors ligne activé.';
+  }
+  const details = failures.map(({ provider, message }) => {
+    if (message.includes('429')) return `${provider} : quota dépassé (429) — réessayez dans quelques minutes`;
+    if (message.includes('403')) return `${provider} : clé refusée (403) — vérifiez la clé API`;
+    if (message.includes('401')) return `${provider} : clé invalide (401)`;
+    if (message.includes('fetch failed')) return `${provider} : erreur réseau`;
+    return `${provider} : ${message}`;
+  });
+  return `IA indisponible (${details.join(' · ')}). Mode coaching hors ligne activé.`;
+}
+
+async function resolveAiResponse(requestPrompt, mode, systemInstruction, provider = 'auto') {
+  const failures = [];
+  const order = provider === 'groq'
+    ? ['groq', 'gemini']
+    : provider === 'gemini'
+      ? ['gemini', 'groq']
+      : ['gemini', 'groq'];
+
+  for (const name of order) {
+    if (name === 'gemini' && !env.geminiApiKey) continue;
+    if (name === 'groq' && !env.groqApiKey) continue;
+    try {
+      const result = name === 'gemini'
+        ? await callGemini(requestPrompt, mode, systemInstruction)
+        : await callGroq(requestPrompt, mode, systemInstruction);
+      return result;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      failures.push({ provider: name, message });
+      console.warn(`${name} failed:`, message);
+    }
+  }
+
+  return { failures };
 }
 
 function buildRecommendationPayload(context) {
@@ -396,17 +449,16 @@ router.post('/ask', async (req, res) => {
     const systemInstruction = buildSystemInstruction(mode, profile, buildContextSummary(context));
     const requestPrompt = buildPromptWithHistory(prompt.trim(), history, buildContextSummary(context));
 
-    if (provider === 'groq' && env.groqApiKey) {
-      try { return res.json(await callGroq(requestPrompt, mode, systemInstruction)); } catch (error) { console.warn('Groq failed:', error.message); }
-    }
-    if (env.geminiApiKey) {
-      try { return res.json(await callGemini(requestPrompt, mode, systemInstruction)); } catch (error) { console.warn('Gemini failed:', error.message); }
-    }
-    if (env.groqApiKey) {
-      try { return res.json(await callGroq(requestPrompt, mode, systemInstruction)); } catch (error) { console.warn('Groq fallback failed:', error.message); }
+    const aiResult = await resolveAiResponse(requestPrompt, mode, systemInstruction, provider);
+    if (aiResult.text) {
+      return res.json(aiResult);
     }
 
-    return res.json({ text: getOfflineAdvice(mode), provider: 'offline_coach', notice: 'No AI provider is configured. StudyHub is running in offline coaching mode.' });
+    return res.json({
+      text: getOfflineAdvice(mode, prompt.trim()),
+      provider: 'offline',
+      notice: buildOfflineNotice(aiResult.failures),
+    });
   } catch (error) {
     console.error('AI route error:', error);
     return res.status(500).json({ error: 'Erreur lors de la communication avec le service IA' });

@@ -17,12 +17,17 @@ router.all('/*', async (req, res) => {
 
     const method = req.method;
 
-    // Auth routes are mounted BEFORE express.json(), so we read the raw stream.
     let body;
     if (method !== 'GET' && method !== 'HEAD') {
       const chunks = [];
       for await (const chunk of req) chunks.push(chunk);
-      body = Buffer.concat(chunks);
+      const raw = Buffer.concat(chunks);
+
+      if (raw.length > 0) {
+        body = raw;
+      } else if (req.body !== undefined && req.body !== null) {
+        body = Buffer.from(JSON.stringify(req.body));
+      }
     }
 
     const request = new Request(url, {

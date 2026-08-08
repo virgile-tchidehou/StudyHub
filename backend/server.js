@@ -26,6 +26,9 @@ const app = express();
 const FRONTEND_URL = env.frontendUrl;
 app.use(cors({ origin: FRONTEND_URL, credentials: true }));
 app.options('*', cors({ origin: FRONTEND_URL, credentials: true }));
+
+// Better Auth must run before express.json() — JSON parser consumes the request stream.
+app.use('/api/auth', authRoutes);
 app.use(express.json({ limit: '1mb' }));
 
 app.use('/api/goals', goalsRouter);
@@ -37,7 +40,6 @@ app.use('/api/resources', resourcesRouter);
 app.use('/api/technical', technicalRouter);
 app.use('/api/learning', learningRouter);
 app.use('/api/learning/diagnostic', learningDiagnosticRouter);
-app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRouter);
 app.use('/api/gemini', geminiRouter);
 app.use('/api/ai', aiRouter);
