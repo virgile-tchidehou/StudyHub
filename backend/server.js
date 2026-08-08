@@ -15,6 +15,7 @@ import scholarshipsRouter from './src/routes/scholarships.js';
 import plannerRouter from './src/routes/planner.js';
 import resourcesRouter from './src/routes/resources.js';
 import technicalRouter from './src/routes/technical.js';
+import learningRouter from './src/routes/learning.js';
 import { env } from './src/config/env.js';
 import { healthCheck } from './src/config/database.js';
 
@@ -33,6 +34,7 @@ app.use('/api/scholarships', scholarshipsRouter);
 app.use('/api/planner', plannerRouter);
 app.use('/api/resources', resourcesRouter);
 app.use('/api/technical', technicalRouter);
+app.use('/api/learning', learningRouter);
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRouter);
 app.use('/api/gemini', geminiRouter);
@@ -40,7 +42,6 @@ app.use('/api/ai', aiRouter);
 app.use('/api/flashcards', flashcardsRouter);
 app.use('/api/chat-messages', chatMessagesRouter);
 
-// Temporary/local document storage. Move sensitive documents to private object storage before production.
 app.use('/uploads', express.static(path.resolve(process.cwd(), '..', 'uploads')));
 
 app.get('/health', async (_req, res) => {
